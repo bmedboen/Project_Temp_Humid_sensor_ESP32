@@ -1,7 +1,14 @@
 // web_server.cpp
 
 #include "web_server.h" // Include its own header file
+
 #include <sys/time.h>   // For settimeofday
+#include <FS.h> 
+#include <LittleFS.h> 
+
+#include "config.h"
+#include "dht_sensor.h"
+#include "time_manager.h" // For getFormattedTime()
 
 // --- Global variables (definitions from web_server.h) ---
 WebServer server(WEBSERVER_PORT); // Define the WebServer object (port 80)
@@ -62,8 +69,8 @@ bool isWebServerTimeoutReached() {
 void handleRoot_internal() {
     resetWebServerActivityTimer(); // Reset timer on activity
 
-    float h = dht.readHumidity(); // Using global dht from main.ino
-    float t = dht.readTemperature();
+    float h = DHTSensor_readHumidity(); 
+    float t = DHTSensor_readTemperature();
 
     String html = "<h1>ESP32 Temp & Humidity Logger</h1>";
     html += "<p><strong>Current Reading:</strong></p>";
