@@ -20,4 +20,16 @@ bool DataLogger_init();
  * Writes header if the file is empty.
  * @return true if data was successfully logged, false on error.
  */
-bool DataLogger_logSensorData();
+bool DataLogger_logSensorData(float temperature, float humidity);
+
+/**
+ * @brief Gets the last successfully logged humidity value.
+ * @return The last humidity value, or NaN if no data has been logged yet or on error.
+ */
+float DataLogger_getLastHumidity();
+
+/**
+ * @brief Gets the last successfully logged temperature value.
+ * @return The last temperature value, or NaN if no data has been logged yet or on error.
+ */
+float DataLogger_getLastTemperature();

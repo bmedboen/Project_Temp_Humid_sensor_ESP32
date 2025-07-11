@@ -16,10 +16,18 @@ void setup() {
   Serial.begin(115200);
   Serial.println("\nBooting ESP32 Historical Data Logger...");
 
-  DHTSensor_init(); // Initialize DHT sensor
-  delay(2000);
-  Serial.println("DHT sensor initialized.");
+  // Initialize DHT sensor
+  if (!DHTSensor_init()) {
+    Serial.println("DHT sensor initialization failed. Web server and logging will not work.");
+  } else {
+    Serial.println("DHT sensor initialized successfully.");
+  }
 
+  // Read sensor data once upon wakeup/boot for LOGGING
+  float currentLoggedHumidity = DHTSensor_readHumidity();
+  float currentLoggedTemperature = DHTSensor_readTemperature();
+
+  // Initialize Data Logger
   if (!DataLogger_init()) {
     Serial.println("Filesystem failed. Logging and web server will not work.");
   }
@@ -36,7 +44,9 @@ void setup() {
     case ESP_SLEEP_WAKEUP_EXT1: Serial.println("Wakeup by EXT1 pin (Not configured)"); break;
     case ESP_SLEEP_WAKEUP_TIMER:
       Serial.println("Wakeup by timer (" + String(LOG_INTERVAL_SECONDS) + " seconds)");
-      DataLogger_logSensorData();
+
+      DataLogger_logSensorData(currentLoggedTemperature, currentLoggedHumidity);
+      
       if (ENABLE_WEB_SERVER_ON_TIMER_WAKEUP) {
         activateWebServer = true;
       }
@@ -45,7 +55,9 @@ void setup() {
     case ESP_SLEEP_WAKEUP_ULP: Serial.println("Wakeup by ULP program (Not configured)"); break;
     default: // First boot or Reset
       Serial.println("Wakeup not caused by deep sleep (First boot or Reset)");
-      DataLogger_logSensorData();
+
+      DataLogger_logSensorData(currentLoggedTemperature, currentLoggedHumidity);
+      
       activateWebServer = true;
       break;
   }

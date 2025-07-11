@@ -7,7 +7,7 @@
 #include <LittleFS.h> 
 
 #include "config.h"
-#include "dht_sensor.h"
+#include "data_logger.h" 
 #include "time_manager.h" // For getFormattedTime()
 
 // --- Global variables (definitions from web_server.h) ---
@@ -20,6 +20,7 @@ void handleRoot_internal();
 void handleDownload_internal();
 void handleSetTimeForm_internal();
 void handleSetTimeSubmit_internal();
+void handleNotFound_internal();
 
 // --- PUBLIC Web Server Functions (implementations of declarations in web_server.h) ---
 void initWebServerAP() {
@@ -38,6 +39,7 @@ void setupWebServerRoutes() {
     server.on("/download_data", handleDownload_internal);
     server.on("/settings", handleSetTimeForm_internal);
     server.on("/set_time_submit", handleSetTimeSubmit_internal);
+    server.onNotFound(handleNotFound_internal);
     // Add more routes here as needed
 }
 
@@ -69,8 +71,10 @@ bool isWebServerTimeoutReached() {
 void handleRoot_internal() {
     resetWebServerActivityTimer(); // Reset timer on activity
 
-    float h = DHTSensor_readHumidity(); 
-    float t = DHTSensor_readTemperature();
+    float h = DataLogger_getLastHumidity();
+    float t = DataLogger_getLastTemperature();
+
+    Serial.println("Handling root request, current humidity: " + String(h) + ", temperature: " + String(t));
 
     String html = "<h1>ESP32 Temp & Humidity Logger</h1>";
     html += "<p><strong>Current Reading:</strong></p>";
@@ -183,4 +187,21 @@ void handleSetTimeSubmit_internal() {
     html += "<p>Remember, this time will be lost on power cycle without an external RTC module.</p>";
     html += "<p><a href=\"/\">Back to Home</a></p>";
     server.send(200, "text/html", html);
+}
+
+void handleNotFound_internal() {
+    resetWebServerActivityTimer(); // Reset timer on activity
+
+    String message = "404 Not Found\n\n";
+    message += "URI: ";
+    message += server.uri(); // Get the URI that was requested
+    message += "\nMethod: ";
+    message += (server.method() == HTTP_GET) ? "GET" : "POST";
+    message += "\nArguments: ";
+    message += server.args(); // Number of arguments
+    for (uint8_t i = 0; i < server.args(); i++) {
+        message += "\n " + server.argName(i) + ": " + server.arg(i);
+    }
+    Serial.println("Web Server: Unhandled request for URI: " + server.uri()); // Log to serial too
+    server.send(404, "text/plain", message);
 }
