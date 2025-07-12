@@ -27,7 +27,7 @@ constexpr uint8_t BUTTON_PIN = 4; // Using GPIO 4 for EXT0 wake-up
 
 // --- Web Server Configuration ---
 constexpr unsigned int WEBSERVER_PORT = 80; // Standard HTTP port
-constexpr unsigned long WEB_SERVER_INACTIVITY_TIMEOUT = 90 * 1000; // Inactivity in seconds to go to sleep
+constexpr unsigned long WEB_SERVER_INACTIVITY_TIMEOUT = 90 * 1000; // Inactivity in ms to go to sleep
 constexpr bool ENABLE_WEB_SERVER_ON_TIMER_WAKEUP = false; // Activate Web Server on Timer Wakeup
 
 // --- OLED Display Configuration ---
@@ -35,4 +35,4 @@ constexpr uint8_t OLED_RESET_PIN = -1; // Reset pin for SSD1306 (or -1 if sharin
 constexpr uint8_t OLED_SCREEN_WIDTH = 128; // OLED display width, in pixels
 constexpr uint8_t OLED_SCREEN_HEIGHT = 64; // OLED display height, in pixels
 constexpr uint8_t OLED_I2C_ADDRESS = 0x3C; // OLED I2C address (can be 0x3C or 0x3D)
-constexpr unsigned long OLED_DISPLAY_DURATION_MS = 5000; // How long the OLED display stays on after button press (in milliseconds)
+constexpr unsigned long OLED_DISPLAY_DURATION_MS = 90 * 10000; // OLED display duration on after button press (in milliseconds)

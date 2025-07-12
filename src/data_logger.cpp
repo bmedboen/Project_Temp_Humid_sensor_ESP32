@@ -7,11 +7,13 @@
 
 #include <cmath>       // For isnan()
 #include <FS.h>        
-#include <LittleFS.h>  
+#include <LittleFS.h>
+#include "esp_system.h" // Needed for RTC_DATA_ATTR  
 
 // Static global variables to store the last successfully logged values
-static float s_lastLoggedHumidity = NAN;
-static float s_lastLoggedTemperature = NAN;
+// These need to be RTC_DATA_ATTR to persist across deep sleep
+RTC_DATA_ATTR static float s_lastLoggedHumidity = NAN;
+RTC_DATA_ATTR static float s_lastLoggedTemperature = NAN;
 
 bool DataLogger_init() {
   Serial.print("DataLogger: Initializing LittleFS... ");

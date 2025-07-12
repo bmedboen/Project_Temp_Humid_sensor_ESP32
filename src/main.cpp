@@ -11,6 +11,7 @@
 #include "sleep_manager.h"
 #include "time_manager.h" 
 #include "web_server.h" 
+#include "oled_display.h"
 
 extern "C" uint64_t esp_rtc_get_time_us(); // Function to get the current time in microseconds since boot
 
@@ -19,6 +20,10 @@ RTC_DATA_ATTR long deep_sleep_time_us; // Not reset on deep sleep
 RTC_DATA_ATTR int deep_sleep_count_s = 0; // Not reset on deep sleep
 
 bool data_logged = false; // Flag to indicate if data was logged in the current cycle
+
+// Global variables for OLED display management
+bool oled_active = false;
+unsigned long oled_active_start_time = 0;
 
 long calculateDeepSleepTime() {
   // Adjust deep sleep time based on how long the system has been awake since last logging
@@ -45,6 +50,13 @@ void setup() {
   if (!DataLogger_init()) {
     Serial.println("Main: Filesystem failed. Logging and web server will not work.");
   }
+
+  // Initialize OLED Display (quick initialization)
+  if (!OLEDDisplay_init()) {
+      Serial.println("Main: OLED display initialization failed.");
+  } else {
+      Serial.println("Main: OLED display initialized successfully.");
+  }
     
   esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
   bool activateWebServer = false;
@@ -52,12 +64,17 @@ void setup() {
   if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0) {
     Serial.println("Main: Wakeup by EXT0 pin (Button Press)");
     activateWebServer = true;
+    oled_active = true;
+    oled_active_start_time = millis(); // Record time when OLED became active
+
   } else if (wakeup_reason == ESP_SLEEP_WAKEUP_TIMER) {
     Serial.println("Main: Wakeup by timer (" + String(deep_sleep_time_us / 1000000) + " seconds)");
     activateWebServer = ENABLE_WEB_SERVER_ON_TIMER_WAKEUP;
   } else {
     Serial.println("Main: Wakeup not caused by deep sleep (First boot or Reset or other reason)");
     activateWebServer = true;
+    oled_active = true;
+    oled_active_start_time = millis(); // Record time when OLED became active
   }
 
   if (activateWebServer) {
@@ -75,8 +92,8 @@ void setup() {
 
 // Read and log sensor data every LOG_INTERVAL_SECONDS
 void loop() {  
-  uint64_t current_time = esp_rtc_get_time_us() / 1000; //Time in milliseconds since boot
-  
+  uint64_t current_time = esp_rtc_get_time_us() / 1000; //Time in milliseconds since boot   
+
   if (current_time - time_last_logged_s >= LOG_INTERVAL_SECONDS * 1000UL || time_last_logged_s == 0) {
     float currentLoggedHumidity = DHTSensor_readHumidity();
     float currentLoggedTemperature = DHTSensor_readTemperature();
@@ -90,6 +107,23 @@ void loop() {
     }
 
     data_logged = true;
+  }
+
+  if (oled_active) {
+      // Get last successfully logged data for OLED display
+    float lastHumidity = DataLogger_getLastHumidity();
+    float lastTemperature = DataLogger_getLastTemperature();
+
+    // Display the last known sensor data on OLED
+    OLEDDisplay_showSensorData(lastTemperature, lastHumidity);
+  }
+
+  // Check if OLED display duration has expired
+  if (oled_active && (millis() - oled_active_start_time >= OLED_DISPLAY_DURATION_MS)) {
+    OLEDDisplay_clear();
+    OLEDDisplay_turnOff(); // Turn off the OLED display
+    oled_active = false;
+    Serial.println("Main: OLED display turned off after duration.");
   }
 
   // If data is logged, go to deep sleep, unless web server is active and timeout not reached. 
