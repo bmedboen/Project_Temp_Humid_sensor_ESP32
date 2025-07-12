@@ -72,8 +72,6 @@ bool DataLogger_logSensorData(float temperature, float humidity) {
 }
 
 float DataLogger_getLastHumidity() {
-    Serial.print("DataLogger: Last logged humidity: ");
-    Serial.println(s_lastLoggedHumidity);
     return s_lastLoggedHumidity;
 }
 

@@ -24,12 +24,12 @@ void handleNotFound_internal();
 
 // --- PUBLIC Web Server Functions (implementations of declarations in web_server.h) ---
 void initWebServerAP() {
-    Serial.print("Setting up AP ");
+    Serial.print("Web Server: Setting up AP ");
     Serial.print(AP_SSID);
     WiFi.softAP(AP_SSID, AP_PASSWORD);
     delay(100); // Give WiFi time to start
     Serial.println(" READY");
-    Serial.print("AP IP Address: ");
+    Serial.print("Web Server: AP IP Address: ");
     Serial.println(WiFi.softAPIP());
     webServerLastActivityTime = millis(); // Initialize activity time after Wi-Fi is up
 }
@@ -45,9 +45,9 @@ void setupWebServerRoutes() {
 
 void startWebServer() {
     server.begin();
-    Serial.println("HTTP server started.");
-    Serial.println("Connect your phone/device to the '" + String(AP_SSID) + "' Wi-Fi network.");
-    Serial.println("Then open a web browser and go to http://" + WiFi.softAPIP().toString() + "/");
+    Serial.println("Web Server: HTTP server started.");
+    Serial.println("Web Server: Connect your phone/device to the '" + String(AP_SSID) + "' Wi-Fi network.");
+    Serial.println("Web Server: Then open a web browser and go to http://" + WiFi.softAPIP().toString() + "/");
 }
 
 void handleWebServerClients() {
@@ -74,7 +74,7 @@ void handleRoot_internal() {
     float h = DataLogger_getLastHumidity();
     float t = DataLogger_getLastTemperature();
 
-    Serial.println("Handling root request, current humidity: " + String(h) + ", temperature: " + String(t));
+    Serial.println("Web Server: Handling root request, current humidity: " + String(h) + ", temperature: " + String(t));
 
     String html = "<h1>ESP32 Temp & Humidity Logger</h1>";
     html += "<p><strong>Current Reading:</strong></p>";
@@ -89,7 +89,7 @@ void handleRoot_internal() {
     html += "<p><a href=\"/download_data\">Download Historical Data (CSV)</a></p>";
     html += "<p><a href=\"/settings\">Set Date & Time</a></p>";
     html += "<p><em>Data logged every " + String(LOG_INTERVAL_SECONDS) + " seconds.</em></p>"; // From LOG_INTERVAL_SECONDS global
-    html = "<meta http-equiv='refresh' content='5'>" + html; // Refresh every 5 seconds
+    // html = "<meta http-equiv='refresh' content='5'>" + html; // Refresh every 5 seconds
 
     server.send(200, "text/html", html);
 }
@@ -116,13 +116,13 @@ void handleDownload_internal() {
     uint8_t buffer[bufferSize];
     size_t bytesRead = 0;
 
-    Serial.println("Serving " + String(LOG_FILE_NAME) + "...");
+    Serial.println("Web Server: Serving " + String(LOG_FILE_NAME) + "...");
     while (dataFile.available()) {
         bytesRead = dataFile.read(buffer, bufferSize);
         server.client().write(buffer, bytesRead);
         yield();
     }
-    Serial.println("File transfer complete.");
+    Serial.println("Web Server: File transfer complete.");
 
     dataFile.close();
 }
@@ -170,7 +170,7 @@ void handleSetTimeSubmit_internal() {
         String html = "<h1>Error Setting Time</h1><p>Invalid date/time provided. Please check values.</p>";
         html += "<p><a href=\"/settings\">Back to Settings</a></p>";
         server.send(200, "text/html", html);
-        Serial.println("Invalid time provided by user.");
+        Serial.println("Web Server: Invalid time provided by user.");
         return;
     }
 
@@ -179,7 +179,7 @@ void handleSetTimeSubmit_internal() {
     tv.tv_usec = 0;
     settimeofday(&tv, NULL);
 
-    Serial.print("Time set to: ");
+    Serial.print("Web server: Time set to: ");
     Serial.println(getFormattedTime());
 
     String html = "<h1>Time Set Successfully!</h1>";
