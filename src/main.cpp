@@ -65,7 +65,6 @@ void setup() {
     Serial.println("Main: Wakeup by EXT0 pin (Button Press)");
     activateWebServer = true;
     oled_active = true;
-    oled_active_start_time = millis(); // Record time when OLED became active
 
   } else if (wakeup_reason == ESP_SLEEP_WAKEUP_TIMER) {
     Serial.println("Main: Wakeup by timer (" + String(deep_sleep_time_us / 1000000) + " seconds)");
@@ -74,7 +73,6 @@ void setup() {
     Serial.println("Main: Wakeup not caused by deep sleep (First boot or Reset or other reason)");
     activateWebServer = true;
     oled_active = true;
-    oled_active_start_time = millis(); // Record time when OLED became active
   }
 
   if (activateWebServer) {
@@ -118,24 +116,22 @@ void loop() {
     OLEDDisplay_showSensorData(lastTemperature, lastHumidity);
   }
 
-  // Check if OLED display duration has expired
-  if (oled_active && (millis() - oled_active_start_time >= OLED_DISPLAY_DURATION_MS)) {
-    OLEDDisplay_clear();
-    OLEDDisplay_turnOff(); // Turn off the OLED display
-    oled_active = false;
-    Serial.println("Main: OLED display turned off after duration.");
-  }
-
   // If data is logged, go to deep sleep, unless web server is active and timeout not reached. 
   // Then calculate the additional awake time. This additional awake time is used to calculate the next deep sleep time, 
   // to ensure we don't miss the next logging interval. 
   // Check deep_sleep_time is bigger than WAKEUP_OVERHEAD_MS * 1000UL to avoid going to deep sleep too soon. 
   if (isWebServerActive()) { 
     handleWebServerClients(); 
-    if (isWebServerTimeoutReached() && data_logged) {
-      
+    if (isWebServerTimeoutReached() && data_logged) {          
+
       deep_sleep_time_us = calculateDeepSleepTime() - WAKEUP_OVERHEAD_MS * 1000UL;
       if (deep_sleep_time_us >= WAKEUP_OVERHEAD_MS * 1000UL) {
+
+        OLEDDisplay_clear();
+        OLEDDisplay_turnOff(); // Turn off the OLED display
+        oled_active = false;
+        Serial.println("Main: OLED display turned off.");
+
         ++deep_sleep_count_s;
         Serial.println("Main: Cycle time awake is " + String(millis() / 1000) + " seconds.");
         goToDeepSleep(deep_sleep_time_us);
