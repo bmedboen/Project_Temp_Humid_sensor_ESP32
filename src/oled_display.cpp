@@ -2,6 +2,9 @@
 
 #include "oled_display.h"
 #include "config.h" // For OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, OLED_I2C_ADDRESS, OLED_RESET_PIN
+#include "system_logger.h" // New include for logging
+
+#define LOG_TAG "OLED" // Define a tag for OLEDDisplay module logs
 
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -16,7 +19,7 @@ bool OLEDDisplay_init() {
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if(!display.begin(SSD1306_SWITCHCAPVCC, OLED_I2C_ADDRESS)) {
-    Serial.println(F("SSD1306 allocation failed"));
+    LOG_ERROR(LOG_TAG, "SSD1306 allocation failed");
     return false;
   }
 

@@ -1,6 +1,9 @@
 // time_manager.cpp
 
 #include "time_manager.h"
+#include "system_logger.h" // New include for logging
+
+#define LOG_TAG "TIME" // Define a tag for TimeManager module logs
 
 String getFormattedTime() {
   struct tm timeinfo;

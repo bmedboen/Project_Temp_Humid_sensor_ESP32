@@ -10,6 +10,9 @@
 #include "config.h"
 #include "data_logger.h" 
 #include "time_manager.h" // For getFormattedTime()
+#include "system_logger.h" // New include for logging
+
+#define LOG_TAG "WEB" // Define a tag for WebServer module logs
 
 // --- Global variables (definitions from web_server.h) ---
 WebServer server(WEBSERVER_PORT); // Define the WebServer object (port 80)
@@ -39,7 +42,7 @@ bool activateWebServer() {
 
     // Pre-condition check: ensure Wi-Fi is already on and in AP mode
     if (WiFi.getMode() != WIFI_AP && WiFi.getMode() != WIFI_AP_STA) {
-        Serial.println("Web Server: Error - Wi-Fi is not in AP mode. Cannot start server.");
+        LOG_ERROR(LOG_TAG, "Wi-Fi is not in AP mode. Cannot start server.");
         return false;
     }
 
@@ -73,9 +76,9 @@ static void startWebServer_internal() {
     server.begin();
     isServerRunning = true;
     webServerLastActivityTime = millis(); // Initialize activity time after server is up and running
-    Serial.println("Web Server: HTTP server started.");
-    Serial.println("Web Server: Connect your phone/device to the '" + String(AP_SSID) + "' Wi-Fi network.");
-    Serial.println("Web Server: Then open a web browser and go to http://" + WiFi.softAPIP().toString() + "/");
+    LOG_INFO(LOG_TAG, "HTTP server started.");
+    LOG_INFO(LOG_TAG, "Connect your phone/device to the '%s' Wi-Fi network.", AP_SSID);
+    LOG_INFO(LOG_TAG, "Then open a web browser and go to http://%s/", WiFi.softAPIP().toString().c_str());
     
 }
 
@@ -91,7 +94,7 @@ static void stopWebServer_internal() {
     if (isServerRunning) {
         server.stop();
         isServerRunning = false;
-        Serial.println("Web Server: Server stopped.");
+        LOG_INFO(LOG_TAG, "Server stopped.");
     }
 }
 
@@ -111,7 +114,7 @@ static void handleRoot_internal() {
     float h = DataLogger_getLastHumidity();
     float t = DataLogger_getLastTemperature();
 
-    Serial.println("Web Server: Handling root request, current humidity: " + String(h) + ", temperature: " + String(t));
+    LOG_DEBUG(LOG_TAG, "Handling root request, current humidity: %.1f, temperature: %.1f", h, t);
 
     String html = "<h1>ESP32 Temp & Humidity Logger</h1>";
     html += "<p><strong>Current Reading:</strong></p>";
@@ -153,13 +156,13 @@ static void handleDownload_internal() {
     uint8_t buffer[bufferSize];
     size_t bytesRead = 0;
 
-    Serial.println("Web Server: Serving " + String(LOG_FILE_NAME) + "...");
+    LOG_INFO(LOG_TAG, "Serving %s...", LOG_FILE_NAME);
     while (dataFile.available()) {
         bytesRead = dataFile.read(buffer, bufferSize);
         server.client().write(buffer, bytesRead);
         yield();
     }
-    Serial.println("Web Server: File transfer complete.");
+    LOG_INFO(LOG_TAG, "File transfer complete.");
 
     dataFile.close();
 }
@@ -207,7 +210,7 @@ static void handleSetTimeSubmit_internal() {
         String html = "<h1>Error Setting Time</h1><p>Invalid date/time provided. Please check values.</p>";
         html += "<p><a href=\"/settings\">Back to Settings</a></p>";
         server.send(200, "text/html", html);
-        Serial.println("Web Server: Invalid time provided by user.");
+        LOG_WARN(LOG_TAG, "Invalid time provided by user.");
         return;
     }
 
@@ -216,8 +219,7 @@ static void handleSetTimeSubmit_internal() {
     tv.tv_usec = 0;
     settimeofday(&tv, NULL);
 
-    Serial.print("Web server: Time set to: ");
-    Serial.println(getFormattedTime());
+    LOG_INFO(LOG_TAG, "Time set to: %s", getFormattedTime().c_str());
 
     String html = "<h1>Time Set Successfully!</h1>";
     html += "<p>New ESP32 Time: <strong>" + getFormattedTime() + "</strong></p>";
@@ -239,6 +241,6 @@ static void handleNotFound_internal() {
     for (uint8_t i = 0; i < server.args(); i++) {
         message += "\n " + server.argName(i) + ": " + server.arg(i);
     }
-    Serial.println("Web Server: Unhandled request for URI: " + server.uri()); // Log to serial too
+    LOG_WARN(LOG_TAG, "Unhandled request for URI: %s", server.uri().c_str());
     server.send(404, "text/plain", message);
 }

@@ -4,6 +4,9 @@
 #include "app_controller.h"
 #include "config.h" 
 #include "sleep_manager.h" // Needed for the actual sleep call
+#include "system_logger.h" // New include for logging
+
+#define LOG_TAG "MAIN" // Define a tag for Main module logs
 
 // --- RTC Memory ---
 // These must define storage here
@@ -17,7 +20,6 @@ AppState currentState = STATE_INIT;
 bool stayAwakeForInteraction = false; 
 
 void setup() {
-    // Minimal setup
     currentState = STATE_INIT;
 }
 

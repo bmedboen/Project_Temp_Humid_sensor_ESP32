@@ -3,10 +3,9 @@
 #include "sleep_manager.h"
 #include "config.h"
 #include "esp_sleep.h"
+#include "system_logger.h" // New include for logging
 
-// Define safety constants locally
-static const int64_t MIN_SLEEP_US = 1000000;      // 1 second minimum allowed sleep
-static const int64_t SAFE_DEFAULT_US = 2000000;  // 2 seconds default if calculation fails
+#define LOG_TAG "SLEEP" // Define a tag for Sleep Manager module logs
 
 int64_t calculateSleepTime(uint64_t timeLastLogged_ms, uint64_t currentTime_ms, uint64_t overhead_ms, uint64_t logInterval_ms) {
     // Explicitly cast all unsigned inputs to signed 64-bit integers BEFORE calculation.
@@ -34,17 +33,15 @@ void goToDeepSleep(int64_t sleep_time_us) {
     // Ensure we don't try to sleep for a negative time or an extremely short time.
     // Short deep sleep cycles can cause boot loops that are hard to recover from.
     if (sleep_time_us < MIN_SLEEP_US) {
-        Serial.print("Sleep Manager: Warning! Requested sleep time (");
-        Serial.print((long)(sleep_time_us / 1000)); 
-        Serial.println(" ms) is too short or negative.");
+        LOG_WARN(LOG_TAG, "Requested sleep time (%.3f s) is too short or negative.", (double)sleep_time_us / 1000000.0);
         
         sleep_time_us = SAFE_DEFAULT_US;
         
-        Serial.println("Sleep Manager: Enforcing safe default of 10 seconds.");
+        LOG_INFO(LOG_TAG, "Enforcing safe default of %.3f seconds.", (double)SAFE_DEFAULT_US / 1000000.0);
     }
 
-    Serial.println("Sleep Manager: Entering Deep Sleep for " + String((long)(sleep_time_us / 1000000)) + " seconds...");
-    Serial.println("Sleep Manager: Wake up source: Timer or Button (GPIO " + String(BUTTON_PIN) + ")");
+    LOG_INFO(LOG_TAG, "Entering Deep Sleep for %.3f seconds...", (double)sleep_time_us / 1000000.0);
+    LOG_INFO(LOG_TAG, "Wake up source: Timer or Button (GPIO %d)", BUTTON_PIN);
 
     // Configure Timer Wakeup (Casting back to uint64_t is safe here because we ensured it's positive above)
     esp_sleep_enable_timer_wakeup((uint64_t)sleep_time_us);
@@ -57,5 +54,5 @@ void goToDeepSleep(int64_t sleep_time_us) {
     esp_deep_sleep_start();
   
     // This line will never be reached unless deep sleep fails
-    Serial.println("Sleep Manager: Error! Deep sleep failed.");
+    LOG_ERROR(LOG_TAG, "Deep sleep failed! This should not happen.");
 }

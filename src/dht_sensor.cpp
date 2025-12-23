@@ -1,6 +1,9 @@
 // dht_sensor.cpp
 
 #include "config.h"
+#include "system_logger.h" // New include for logging
+
+#define LOG_TAG "DHT" // Define a tag for DHT module logs
 
 // Create DHT object
 DHT dht(DHT_PIN, DHT_TYPE);
