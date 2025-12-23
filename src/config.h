@@ -29,7 +29,7 @@ constexpr uint8_t DHT_TYPE = DHT11; // Assuming DHT11. Adjust if you use DHT22, 
 constexpr const char* LOG_FILE_NAME = "/datalog.csv";
 
 // --- Logging and Sensor Read Intervals ---
-constexpr unsigned long LOG_INTERVAL_SECONDS = 60 * 60; // How often to log data in seconds
+constexpr unsigned long LOG_INTERVAL_SECONDS = 60 * 1; // How often to log data in seconds
 constexpr unsigned long WAKEUP_OVERHEAD_MS = 1000; // Estimated time for boot + setup + pre-log ops in milliseconds
 
 // --- Button Configuration for Wake-up ---
@@ -48,4 +48,4 @@ constexpr uint8_t OLED_I2C_ADDRESS = 0x3C; // OLED I2C address (can be 0x3C or 0
 
 // --- Sleep Manager Configuration ---
 constexpr int64_t MIN_SLEEP_US = 1000000;      // 1 second minimum allowed sleep
-constexpr int64_t SAFE_DEFAULT_US = 10000000;  // 10 seconds default if calculation fails or too short
+constexpr int64_t SAFE_DEFAULT_US = 2000000;   // 2 seconds default if calculation fails or too short

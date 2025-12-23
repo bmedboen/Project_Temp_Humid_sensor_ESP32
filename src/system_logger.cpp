@@ -1,5 +1,14 @@
 // system_logger.cpp
 
+#include "system_logger.h"
+#include <stdarg.h>
+
+void Logger_Init() {
+    Serial.begin(115200);
+    delay(100);
+    LOG_INFO("System", "Logger Initialized");
+}
+
 void Logger_Log(LogLevel level, const char* tag, const char* format, ...) {
 
     // --- SAFETY FIX 1: Always reset colors first ---

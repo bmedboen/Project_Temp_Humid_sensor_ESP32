@@ -6,7 +6,7 @@ TO-DO:
 - RTC clock
 - SD card
 - BLE
-- Log files
+- Log files - ok
 - Wifi conncetion
 - Dashboard på nett
 - OTA update

@@ -14,6 +14,8 @@
 #include "wifi_manager.h"
 #include "esp_sleep.h"
 
+#define LOG_TAG "DATALOG" // Define a tag for DataLogger module logs
+
 // --- External Global Variables ---
 extern uint64_t time_last_logged_ms; 
 extern int deep_sleep_count;
