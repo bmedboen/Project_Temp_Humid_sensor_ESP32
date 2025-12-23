@@ -3,6 +3,7 @@
 #pragma once
 
 #include <cstdint>
+#include <Arduino.h>
 #include <DHT.h>
 
 // --- Wi-Fi Access Point (AP) Configuration ---
@@ -18,9 +19,8 @@ constexpr uint8_t DHT_TYPE = DHT11; // Assuming DHT11. Adjust if you use DHT22, 
 constexpr const char* LOG_FILE_NAME = "/datalog.csv";
 
 // --- Logging and Sensor Read Intervals ---
-constexpr unsigned long LOG_INTERVAL_SECONDS = 60; // How often to log data in seconds
+constexpr unsigned long LOG_INTERVAL_SECONDS = 60 * 60; // How often to log data in seconds
 constexpr unsigned long WAKEUP_OVERHEAD_MS = 1000; // Estimated time for boot + setup + pre-log ops in milliseconds
-constexpr unsigned long DEEP_SLEEP_TIMER_US = (LOG_INTERVAL_SECONDS * 1000000UL) - (WAKEUP_OVERHEAD_MS * 1000UL); // In microseconds
 
 // --- Button Configuration for Wake-up ---
 constexpr uint8_t BUTTON_PIN = 4; // Using GPIO 4 for EXT0 wake-up

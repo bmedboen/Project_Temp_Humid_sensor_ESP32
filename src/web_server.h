@@ -4,10 +4,7 @@
 
 #include <WebServer.h>
 
-void initWebServerAP();
-void setupWebServerRoutes();
-void startWebServer();
+bool activateWebServer();
 void handleWebServerClients();
 bool isWebServerActive();
-void resetWebServerActivityTimer();
-bool isWebServerTimeoutReached();
+bool stopWebServerIfIdle();

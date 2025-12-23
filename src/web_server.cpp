@@ -2,6 +2,7 @@
 
 #include "web_server.h" // Include its own header file
 
+#include <WiFi.h>
 #include <sys/time.h>   // For settimeofday
 #include <FS.h> 
 #include <LittleFS.h> 
@@ -12,29 +13,90 @@
 
 // --- Global variables (definitions from web_server.h) ---
 WebServer server(WEBSERVER_PORT); // Define the WebServer object (port 80)
-unsigned long webServerLastActivityTime = 0;
+static uint64_t webServerLastActivityTime = 0;
+static bool isServerRunning = false;
 
 // --- PRIVATE Web Server Handler Functions ---
-// These functions are only called internally by the web_server module
-void handleRoot_internal();
-void handleDownload_internal();
-void handleSetTimeForm_internal();
-void handleSetTimeSubmit_internal();
-void handleNotFound_internal();
+// Helper functions
+static void setupWebServerRoutes_internal();
+static void startWebServer_internal(); 
+static void resetWebServerActivityTimer_internal();
+static bool isWebServerTimeoutReached_internal();
+static void stopWebServer_internal(); 
+// Web Server Handler functions
+static void handleRoot_internal();
+static void handleDownload_internal();
+static void handleSetTimeForm_internal();
+static void handleSetTimeSubmit_internal();
+static void handleNotFound_internal();
 
 // --- PUBLIC Web Server Functions (implementations of declarations in web_server.h) ---
-void initWebServerAP() {
-    Serial.print("Web Server: Setting up AP ");
-    Serial.print(AP_SSID);
-    WiFi.softAP(AP_SSID, AP_PASSWORD);
-    delay(100); // Give WiFi time to start
-    Serial.println(" READY");
-    Serial.print("Web Server: AP IP Address: ");
-    Serial.println(WiFi.softAPIP());
-    webServerLastActivityTime = millis(); // Initialize activity time after Wi-Fi is up
+bool activateWebServer() {
+    // A defensive check: Don't start if the server is already running
+    if (isServerRunning) {
+        return true;
+    }
+
+    // Pre-condition check: ensure Wi-Fi is already on and in AP mode
+    if (WiFi.getMode() != WIFI_AP && WiFi.getMode() != WIFI_AP_STA) {
+        Serial.println("Web Server: Error - Wi-Fi is not in AP mode. Cannot start server.");
+        return false;
+    }
+
+    setupWebServerRoutes_internal();
+    startWebServer_internal();
+    resetWebServerActivityTimer_internal();
+    return true;
 }
 
-void setupWebServerRoutes() {
+void handleWebServerClients() {
+    if (isServerRunning) {
+        server.handleClient();
+    }
+}
+
+bool stopWebServerIfIdle() {
+    if (isServerRunning && isWebServerTimeoutReached_internal()) {
+        stopWebServer_internal();
+        return true;
+    }
+    return false;
+}
+
+bool isWebServerActive() {
+    return isServerRunning;
+}
+
+// --- PRIVATE functions ---
+// Helper functions
+static void startWebServer_internal() {
+    server.begin();
+    isServerRunning = true;
+    webServerLastActivityTime = millis(); // Initialize activity time after server is up and running
+    Serial.println("Web Server: HTTP server started.");
+    Serial.println("Web Server: Connect your phone/device to the '" + String(AP_SSID) + "' Wi-Fi network.");
+    Serial.println("Web Server: Then open a web browser and go to http://" + WiFi.softAPIP().toString() + "/");
+    
+}
+
+static void resetWebServerActivityTimer_internal() {
+    webServerLastActivityTime = millis();
+}
+
+static bool isWebServerTimeoutReached_internal() {
+    return (millis() - webServerLastActivityTime >= WEB_SERVER_INACTIVITY_TIMEOUT);
+}
+
+static void stopWebServer_internal() {
+    if (isServerRunning) {
+        server.stop();
+        isServerRunning = false;
+        Serial.println("Web Server: Server stopped.");
+    }
+}
+
+// Web Server Handler Implementations functions
+static void setupWebServerRoutes_internal() {
     server.on("/", handleRoot_internal);
     server.on("/download_data", handleDownload_internal);
     server.on("/settings", handleSetTimeForm_internal);
@@ -43,33 +105,8 @@ void setupWebServerRoutes() {
     // Add more routes here as needed
 }
 
-void startWebServer() {
-    server.begin();
-    Serial.println("Web Server: HTTP server started.");
-    Serial.println("Web Server: Connect your phone/device to the '" + String(AP_SSID) + "' Wi-Fi network.");
-    Serial.println("Web Server: Then open a web browser and go to http://" + WiFi.softAPIP().toString() + "/");
-}
-
-void handleWebServerClients() {
-    server.handleClient();
-}
-
-bool isWebServerActive() {
-    return (WiFi.getMode() == WIFI_AP);
-}
-
-void resetWebServerActivityTimer() {
-    webServerLastActivityTime = millis();
-}
-
-bool isWebServerTimeoutReached() {
-    return (millis() - webServerLastActivityTime >= WEB_SERVER_INACTIVITY_TIMEOUT);
-}
-
-// --- PRIVATE Web Server Handler Implementations ---
-
-void handleRoot_internal() {
-    resetWebServerActivityTimer(); // Reset timer on activity
+static void handleRoot_internal() {
+    resetWebServerActivityTimer_internal(); // Reset timer on activity
 
     float h = DataLogger_getLastHumidity();
     float t = DataLogger_getLastTemperature();
@@ -94,8 +131,8 @@ void handleRoot_internal() {
     server.send(200, "text/html", html);
 }
 
-void handleDownload_internal() {
-    resetWebServerActivityTimer(); // Reset timer on activity
+static void handleDownload_internal() {
+    resetWebServerActivityTimer_internal(); // Reset timer on activity
 
     if (!LittleFS.begin()) {
         server.send(500, "text/plain", "LittleFS not mounted!");
@@ -127,8 +164,8 @@ void handleDownload_internal() {
     dataFile.close();
 }
 
-void handleSetTimeForm_internal() {
-    resetWebServerActivityTimer(); // Reset timer on activity
+static void handleSetTimeForm_internal() {
+    resetWebServerActivityTimer_internal(); // Reset timer on activity
 
     String html = "<h1>Set ESP32 Date & Time</h1>";
     html += "<form action=\"/set_time_submit\" method=\"get\">";
@@ -145,8 +182,8 @@ void handleSetTimeForm_internal() {
     server.send(200, "text/html", html);
 }
 
-void handleSetTimeSubmit_internal() {
-    resetWebServerActivityTimer(); // Reset timer on activity
+static void handleSetTimeSubmit_internal() {
+    resetWebServerActivityTimer_internal(); // Reset timer on activity
 
     int year = server.arg("year").toInt();
     int month = server.arg("month").toInt();
@@ -189,8 +226,8 @@ void handleSetTimeSubmit_internal() {
     server.send(200, "text/html", html);
 }
 
-void handleNotFound_internal() {
-    resetWebServerActivityTimer(); // Reset timer on activity
+static void handleNotFound_internal() {
+    resetWebServerActivityTimer_internal(); // Reset timer on activity
 
     String message = "404 Not Found\n\n";
     message += "URI: ";

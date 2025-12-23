@@ -1,0 +1,16 @@
+TO-DO:
+
+- Async web
+- Async fullskala
+- Maskintilstand - ok
+- RTC clock
+- SD card
+- BLE
+- Log files
+- Wifi conncetion
+- Dashboard på nett
+- OTA update
+- Dynamisk konfig
+- Test kode
+- Integrasjon med ESP home og google home
+- Vurdere obj kode
