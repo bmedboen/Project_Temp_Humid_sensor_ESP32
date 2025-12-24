@@ -3,16 +3,16 @@
 #include "system_logger.h"
 #include <stdarg.h>
 
+#define LOG_TAG "LOGGER"
+
 void Logger_Init() {
-    Serial.begin(115200);
-    delay(100);
-    LOG_INFO("System", "Logger Initialized");
+
+    LOG_INFO(LOG_TAG, "Logger Module Initialized (Level: %d)", SYSTEM_LOG_LEVEL);
 }
 
 void Logger_Log(LogLevel level, const char* tag, const char* format, ...) {
 
-    // --- SAFETY FIX 1: Always reset colors first ---
-    // This prevents color bleeding from the previous line affecting the timestamp
+    // Always reset colors first - this prevents color bleeding from the previous line affecting the timestamp
     Serial.print("\033[0m"); 
 
     unsigned long now = millis();
@@ -31,8 +31,7 @@ void Logger_Log(LogLevel level, const char* tag, const char* format, ...) {
         default: break;
     }
 
-    // --- SAFETY FIX 2: Print reset separately ---
-    // Printing the tag and the reset code in separate statements avoids buffer timing issues
+    // Print the tag and the reset code in separate statements avoids buffer timing issues
     Serial.printf("[%s] ", tag);
     Serial.print("\033[0m"); 
 

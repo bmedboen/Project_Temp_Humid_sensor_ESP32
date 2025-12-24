@@ -14,7 +14,7 @@
 #include "wifi_manager.h"
 #include "esp_sleep.h"
 
-#define LOG_TAG "DATALOG" // Define a tag for DataLogger module logs
+#define LOG_TAG "CONTROLLER" // Define a tag for DataLogger module logs
 
 // --- External Global Variables ---
 extern uint64_t time_last_logged_ms; 
@@ -24,89 +24,82 @@ extern "C" uint64_t esp_rtc_get_time_us();
 // --- Helper Functions ---
 
 static void setupHardware() {
-    // Initialize Logger (starts Serial)
-    Logger_Init();
     
-    LOG_INFO("Hardware", "Initializing components...");
+    LOG_INFO(LOG_TAG, "Hardware: Setting up hardware...");
     
     if(DHTSensor_init()) {
-        LOG_INFO("Hardware", "DHT Sensor initialized.");
+        LOG_INFO(LOG_TAG, "Hardware: DHT Sensor initialized.");
     } else {
-        LOG_ERROR("Hardware", "DHT Sensor failed!");
+        LOG_ERROR(LOG_TAG, "Hardware: DHT Sensor failed!");
     }
 
     if(DataLogger_init()) {
-        LOG_INFO("Hardware", "LittleFS initialized.");
+        LOG_INFO(LOG_TAG, "Hardware: LittleFS initialized.");
     } else {
-        LOG_ERROR("Hardware", "LittleFS Mount Failed!");
+        LOG_ERROR(LOG_TAG, "Hardware: LittleFS Mount Failed!");
     }
 }
 
 static void startInteractiveServices() {
-    LOG_INFO("Controller", "Starting Interactive Services...");
+    LOG_INFO(LOG_TAG, "Starting Interactive Services...");
 
     // 1. Initialize and update OLED
     if (OLEDDisplay_init()) {
         float lastTemp = DataLogger_getLastTemperature();
         float lastHum = DataLogger_getLastHumidity();
         OLEDDisplay_showSensorData(lastTemp, lastHum);
-        LOG_INFO("Controller", "OLED active.");
+        LOG_INFO(LOG_TAG, "OLED active.");
     }
 
     // 2. Initialize Wi-Fi
     if (wifi_manager_init_AP()) {
-        LOG_INFO("Controller", "WiFi AP started.");
+        LOG_INFO(LOG_TAG, "WiFi AP started.");
         
         // 3. Start the Web Server
         if (activateWebServer()) {
-             LOG_INFO("Controller", "WebServer active.");
+             LOG_INFO(LOG_TAG, "WebServer active.");
         } else {
-             LOG_ERROR("Controller", "WebServer failed to start.");
+             LOG_ERROR(LOG_TAG, "WebServer failed to start.");
         }
     } else {
-        LOG_ERROR("Controller", "WiFi AP failed! WebServer skipped.");
+        LOG_ERROR(LOG_TAG, "WiFi AP failed! WebServer skipped.");
     }
 }
 
 static void stopInteractiveServices() {
-    LOG_INFO("Controller", "Stopping Interactive Services...");
+    LOG_INFO(LOG_TAG, "Stopping Interactive Services...");
     wifi_manager_turnOff();
     OLEDDisplay_turnOff();
 }
 
 // --- State Implementations ---
-
 AppState run_state_init() {
-    setupHardware();
-    LOG_INFO("State", "--- Boot Complete ---");
+    setupHardware();    
     return STATE_CHECK_WAKEUP; 
 }
 
-AppState run_state_check_wakeup(bool &stayAwakeFlag) {
-    LOG_DEBUG("State", "Entering CHECK_WAKEUP");
-    
+AppState run_state_check_wakeup(bool &stayAwakeFlag) {    
     esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
 
     if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0) {
-        LOG_INFO("Wakeup", "Reason: Button Press (EXT0)");
+        LOG_INFO(LOG_TAG, "Wakeup reason: Button Press (EXT0)");
         
         // Show cached data immediately for responsiveness
         if (OLEDDisplay_init()) {
             float oldTemp = DataLogger_getLastTemperature();
             float oldHum = DataLogger_getLastHumidity();
             OLEDDisplay_showSensorData(oldTemp, oldHum);
-            LOG_DEBUG("Wakeup", "Cached data displayed.");
         }
         
         delay(50); // Debounce
         stayAwakeFlag = true;
 
     } else if (wakeup_reason == ESP_SLEEP_WAKEUP_TIMER) {
-        LOG_INFO("Wakeup", "Reason: Timer (Scheduled Log)");
+        LOG_INFO(LOG_TAG, "Wakeup reason: Timer (Scheduled Log)");
         stayAwakeFlag = ENABLE_WEB_SERVER_ON_TIMER_WAKEUP;
 
     } else {
-        LOG_INFO("Wakeup", "Reason: System Reset / First Boot");
+        LOG_INFO(LOG_TAG, "Wakeup reason: System Reset / First Boot");
         
         // Show N/A on OLED
         if (OLEDDisplay_init()) {
@@ -119,21 +112,20 @@ AppState run_state_check_wakeup(bool &stayAwakeFlag) {
 }
 
 AppState run_state_logging(bool stayAwakeFlag) {
-    LOG_DEBUG("State", "Entering LOGGING");
     
     uint64_t current_time_ms = esp_rtc_get_time_us() / 1000UL;
     
     float temp = DHTSensor_readTemperature();
     float hum = DHTSensor_readHumidity();
 
-    LOG_DEBUG("Sensor", "Raw Read -> T: %.1f, H: %.1f", temp, hum);
+    LOG_DEBUG(LOG_TAG, "Raw Read -> T: %.1f, H: %.1f", temp, hum);
 
     if (DataLogger_logSensorData(temp, hum)) {
-        LOG_INFO("DataLogger", "Logged successfully. T: %.1f C, H: %.1f %%", temp, hum);
-        // Critical: Update timestamp
+        LOG_INFO(LOG_TAG, "Logged successfully. T: %.1f C, H: %.1f %%", temp, hum);
+
         time_last_logged_ms = current_time_ms;
     } else {
-        LOG_ERROR("DataLogger", "Failed to write data to file!");
+        LOG_ERROR(LOG_TAG, "Failed to write data to file!");
     }
 
     if (stayAwakeFlag) {
@@ -154,7 +146,7 @@ AppState run_state_interactive() {
     handleWebServerClients();
 
     if (stopWebServerIfIdle()) { 
-        LOG_INFO("Interactive", "Inactivity Timeout reached.");
+        LOG_INFO(LOG_TAG, "Inactivity timeout reached.");
         stopInteractiveServices(); 
         isInitialized = false; 
         return STATE_PREPARE_SLEEP;
@@ -164,14 +156,12 @@ AppState run_state_interactive() {
     return STATE_INTERACTIVE; 
 }
 
-AppState run_state_prepare_sleep() {
-    LOG_DEBUG("State", "Entering PREPARE_SLEEP");
-    
+AppState run_state_prepare_sleep() {    
     uint64_t now_ms = esp_rtc_get_time_us() / 1000UL;
     
     int64_t sleep_us = calculateSleepTime(time_last_logged_ms, now_ms, WAKEUP_OVERHEAD_MS, LOG_INTERVAL_SECONDS * 1000UL);
 
-    LOG_INFO("Sleep", "Deep sleep cycles so far: %d", deep_sleep_count);
+    LOG_INFO(LOG_TAG, "Deep sleep cycles so far: %d", deep_sleep_count);
     deep_sleep_count++;
     
     goToDeepSleep(sleep_us); 
