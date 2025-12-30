@@ -13,6 +13,7 @@
 #include "oled_display.h"
 #include "wifi_manager.h"
 #include "esp_sleep.h"
+#include "settings_manager.h"
 
 #define LOG_TAG "CONTROLLER" // Define a tag for DataLogger module logs
 
@@ -22,11 +23,14 @@ extern int deep_sleep_count;
 extern "C" uint64_t esp_rtc_get_time_us(); 
 
 // --- Helper Functions ---
-
 static void setupHardware() {
     
     LOG_INFO(LOG_TAG, "Hardware: Setting up hardware...");
     
+    // 1. Initialize NVS Settings First (Critical for WiFi)
+    Settings.begin();
+
+    // 2. Initialize Sensors and Storage
     if(DHTSensor_init()) {
         LOG_INFO(LOG_TAG, "Hardware: DHT Sensor initialized.");
     } else {

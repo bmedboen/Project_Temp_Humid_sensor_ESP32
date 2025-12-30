@@ -23,8 +23,7 @@ constexpr const char* AP_PASSWORD = "12345678";
 
 // --- Wi-Fi Station (STA) Configuration (For NTP) ---
 // CHANGE THESE to your local network credentials
-constexpr const char* WIFI_STA_SSID = "Telia-2G-95CA57";     
-constexpr const char* WIFI_STA_PASSWORD = "98263312"; 
+// NOTE: Credentials are handled by settings_manager.h / secrets.h
 constexpr unsigned long WIFI_CONNECT_TIMEOUT_MS = 10000;
 
 // --- I2C Configuration (Shared by OLED and RTC) ---
