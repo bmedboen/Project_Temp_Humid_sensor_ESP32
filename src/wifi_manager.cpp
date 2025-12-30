@@ -32,6 +32,25 @@ bool wifi_manager_init_AP() {
     return true; // Return true on success
 }
 
+bool wifi_manager_connect_STA() {
+    LOG_INFO(LOG_TAG, "Connecting to WiFi: %s", WIFI_STA_SSID);
+
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(WIFI_STA_SSID, WIFI_STA_PASSWORD);
+
+    unsigned long start = ::millis();
+    while (WiFi.status() != WL_CONNECTED) {
+        if (::millis() - start > WIFI_CONNECT_TIMEOUT_MS) {
+            LOG_ERROR(LOG_TAG, "Failed to connect to WiFi (Timeout).");
+            return false;
+        }
+        ::delay(500);
+    }
+
+    LOG_INFO(LOG_TAG, "WiFi Connected! IP: %s", WiFi.localIP().toString().c_str());
+    return true;
+}
+
 void wifi_manager_turnOff() {
     LOG_INFO(LOG_TAG, "Turning off Wi-Fi radio...");
     

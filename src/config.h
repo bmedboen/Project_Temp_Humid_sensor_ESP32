@@ -21,6 +21,25 @@
 constexpr const char* AP_SSID = "ESP32_DataLogger";
 constexpr const char* AP_PASSWORD = "12345678"; 
 
+// --- Wi-Fi Station (STA) Configuration (For NTP) ---
+// CHANGE THESE to your local network credentials
+constexpr const char* WIFI_STA_SSID = "Telia-2G-95CA57";     
+constexpr const char* WIFI_STA_PASSWORD = "98263312"; 
+constexpr unsigned long WIFI_CONNECT_TIMEOUT_MS = 10000;
+
+// --- I2C Configuration (Shared by OLED and RTC) ---
+constexpr int I2C_SDA_PIN = 21;
+constexpr int I2C_SCL_PIN = 22;
+
+// --- External RTC Configuration ---
+constexpr bool HAS_EXTERNAL_RTC = true;
+
+// --- NTP / Time Configuration ---
+constexpr const char* NTP_SERVER = "pool.ntp.org";
+constexpr long  GMT_OFFSET_SEC = 3600;      // UTC+1 (Norway)
+constexpr int   DAYLIGHT_OFFSET_SEC = 3600; // DST +1 hour
+constexpr int   NTP_TIMEOUT_MS = 10000;
+
 // --- DHT Sensor Configuration ---
 constexpr uint8_t DHT_PIN = 18;
 constexpr uint8_t DHT_TYPE = DHT11; // Assuming DHT11. Adjust if you use DHT22, etc.

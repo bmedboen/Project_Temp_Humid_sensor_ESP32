@@ -75,6 +75,15 @@ static void stopInteractiveServices() {
 // --- State Implementations ---
 AppState run_state_init() {
     setupHardware();    
+    
+    // Logic: Internal -> External RTC -> NTP handled entirely by TimeManager
+    if (TimeManager_startAndSync()) {
+        LOG_INFO(LOG_TAG, "Time synchronization complete.");
+    } else {
+        LOG_ERROR(LOG_TAG, "CRITICAL: System running without correct time. Please update manually.");
+        // We continue anyway, allowing manual override later via Web Interface
+    }
+
     return STATE_CHECK_WAKEUP; 
 }
 

@@ -1,5 +1,4 @@
 TO-DO:
-
 - Async web
 - Async fullskala
 - Maskintilstand - ok
@@ -13,4 +12,10 @@ TO-DO:
 - Dynamisk konfig
 - Test kode
 - Integrasjon med ESP home og google home
-- Vurdere obj kode
+- Vurdere obj kode - use hybrid. hardware layer = obj. business logic = modular C/C++. cross cutting = global vars  
+- Vurdere standarder - AUTOSAR og MISRA C++
+
+Kjopeliste ali:
+- black/white screen
+- AA batteriholder
+- 2stk beskyttet 1860 batteri
