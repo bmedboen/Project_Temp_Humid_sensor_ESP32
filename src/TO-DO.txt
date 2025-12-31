@@ -2,18 +2,21 @@ TO-DO:
 - Async web
 - Async fullskala
 - Maskintilstand - ok
-- RTC clock
+- RTC clock - ok
 - SD card
 - BLE
 - Log files - ok
-- Wifi conncetion
-- Dashboard på nett
+- Wifi conncetion - ok
+- Dashboard på nett / bedre nettside
 - OTA update
 - Dynamisk konfig
 - Test kode
 - Integrasjon med ESP home og google home
 - Vurdere obj kode - use hybrid. hardware layer = obj. business logic = modular C/C++. cross cutting = global vars  
 - Vurdere standarder - AUTOSAR og MISRA C++
+- Passord handling - ok for now. Vurdere secrets ini. 
+    Hvordan unngå at esp32 må starte på nytt hvis jeg endrer wifi passord via nettside?
+- CI/CD opplegg
 
 Kjopeliste ali:
 - black/white screen
