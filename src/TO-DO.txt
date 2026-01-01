@@ -1,5 +1,7 @@
 TO-DO:
 - Async web
+- Knapp
+    - Når jeg trykker på knapp bør den fornye tiden og reagere i logg
 - Async fullskala
 - Maskintilstand - ok
 - RTC clock - ok
@@ -7,7 +9,9 @@ TO-DO:
 - BLE
 - Log files - ok
 - Wifi conncetion - ok
-- Dashboard på nett / bedre nettside
+- Dashboard på nett / bedre nettside. 
+    - Splittte web side i flere filer
+    - Ha en egen nettside som lagrer info slik at jeg ikke alltid må vekke esp for å se data
 - OTA update
 - Dynamisk konfig
 - Test kode

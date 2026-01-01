@@ -33,3 +33,10 @@ float DataLogger_getLastHumidity();
  * @return The last temperature value, or NaN if no data has been logged yet or on error.
  */
 float DataLogger_getLastTemperature();
+
+/**
+ * @brief Gets the timestamp of the LAST successful logging event.
+ * Retreived from RTC memory.
+ * @return String containing the time (e.g. "2025-01-01 12:00:00").
+ */
+String DataLogger_getLastLogTime(); 

@@ -1,61 +1,74 @@
 // web_server.cpp
 
-#include "web_server.h" // Include its own header file
+#include "web_server.h"
 
 #include <WiFi.h>
-#include <sys/time.h>   // For settimeofday
+#include <AsyncTCP.h>           // Async TCP Library
+#include <ESPAsyncWebServer.h>  // Async Web Server Library
+#include <sys/time.h>           // For settimeofday
 #include <FS.h> 
 #include <LittleFS.h> 
 
 #include "config.h"
 #include "data_logger.h" 
-#include "time_manager.h" // For getFormattedTime()
-#include "system_logger.h" // New include for logging
+#include "time_manager.h" 
+#include "settings_manager.h" 
+#include "system_logger.h" 
+#include "external_rtc.h"
 
-#define LOG_TAG "WEB" // Define a tag for WebServer module logs
+#define LOG_TAG "WEB"
 
-// --- Global variables (definitions from web_server.h) ---
-WebServer server(WEBSERVER_PORT); // Define the WebServer object (port 80)
+// --- Global Variables ---
+// Create AsyncWebServer object on port 80
+AsyncWebServer server(WEBSERVER_PORT); 
+
 static uint64_t webServerLastActivityTime = 0;
 static bool isServerRunning = false;
 
-// --- PRIVATE Web Server Handler Functions ---
-// Helper functions
+// --- Helper Functions Declaration ---
 static void setupWebServerRoutes_internal();
-static void startWebServer_internal(); 
 static void resetWebServerActivityTimer_internal();
 static bool isWebServerTimeoutReached_internal();
-static void stopWebServer_internal(); 
-// Web Server Handler functions
-static void handleRoot_internal();
-static void handleDownload_internal();
-static void handleSetTimeForm_internal();
-static void handleSetTimeSubmit_internal();
-static void handleNotFound_internal();
+static void stopWebServer_internal();
+String getRootHtml(); // Helper to generate HTML
 
-// --- PUBLIC Web Server Functions (implementations of declarations in web_server.h) ---
+// --- PUBLIC FUNCTIONS ---
+
 bool activateWebServer() {
-    // A defensive check: Don't start if the server is already running
     if (isServerRunning) {
         return true;
     }
 
-    // Pre-condition check: ensure Wi-Fi is already on and in AP mode
-    if (WiFi.getMode() != WIFI_AP && WiFi.getMode() != WIFI_AP_STA) {
-        LOG_ERROR(LOG_TAG, "Wi-Fi is not in AP mode. Cannot start server.");
+    // Safety Check: WiFi radio must be ON (AP, STA, or AP_STA)
+    if (WiFi.getMode() == WIFI_OFF) {
+        LOG_ERROR(LOG_TAG, "Wi-Fi is OFF. Cannot start server.");
         return false;
     }
 
+    // Configure URL routes and handlers
     setupWebServerRoutes_internal();
-    startWebServer_internal();
+    
+    // Start the server
+    server.begin(); 
+    isServerRunning = true;
     resetWebServerActivityTimer_internal();
+    
+    LOG_INFO(LOG_TAG, "Async HTTP server started.");
+    
+    // Log access URLs based on current mode
+    if (WiFi.getMode() == WIFI_AP || WiFi.getMode() == WIFI_AP_STA) {
+        LOG_INFO(LOG_TAG, "Access via AP: http://%s/", WiFi.softAPIP().toString().c_str());
+    }
+    if (WiFi.status() == WL_CONNECTED) {
+        LOG_INFO(LOG_TAG, "Access via LAN: http://%s/", WiFi.localIP().toString().c_str());
+    }
+
     return true;
 }
 
 void handleWebServerClients() {
-    if (isServerRunning) {
-        server.handleClient();
-    }
+    // NOT NEEDED for AsyncWebServer. 
+    // Kept empty to maintain compatibility with app_controller structure.
 }
 
 bool stopWebServerIfIdle() {
@@ -70,17 +83,7 @@ bool isWebServerActive() {
     return isServerRunning;
 }
 
-// --- PRIVATE functions ---
-// Helper functions
-static void startWebServer_internal() {
-    server.begin();
-    isServerRunning = true;
-    webServerLastActivityTime = millis(); // Initialize activity time after server is up and running
-    LOG_INFO(LOG_TAG, "HTTP server started.");
-    LOG_INFO(LOG_TAG, "Connect your phone/device to the '%s' Wi-Fi network.", AP_SSID);
-    LOG_INFO(LOG_TAG, "Then open a web browser and go to http://%s/", WiFi.softAPIP().toString().c_str());
-    
-}
+// --- INTERNAL HELPER FUNCTIONS ---
 
 static void resetWebServerActivityTimer_internal() {
     webServerLastActivityTime = millis();
@@ -92,155 +95,250 @@ static bool isWebServerTimeoutReached_internal() {
 
 static void stopWebServer_internal() {
     if (isServerRunning) {
-        server.stop();
+        server.end(); // Use .end() for AsyncWebServer
         isServerRunning = false;
-        LOG_INFO(LOG_TAG, "Server stopped.");
+        LOG_INFO(LOG_TAG, "Server stopped due to inactivity.");
     }
 }
 
-// Web Server Handler Implementations functions
-static void setupWebServerRoutes_internal() {
-    server.on("/", handleRoot_internal);
-    server.on("/download_data", handleDownload_internal);
-    server.on("/settings", handleSetTimeForm_internal);
-    server.on("/set_time_submit", handleSetTimeSubmit_internal);
-    server.onNotFound(handleNotFound_internal);
-    // Add more routes here as needed
-}
-
-static void handleRoot_internal() {
-    resetWebServerActivityTimer_internal(); // Reset timer on activity
-
+// --- HTML GENERATOR ---
+String getRootHtml() {
     float h = DataLogger_getLastHumidity();
     float t = DataLogger_getLastTemperature();
+    String timeStr = DataLogger_getLastLogTime();
 
-    LOG_DEBUG(LOG_TAG, "Handling root request, current humidity: %.1f, temperature: %.1f", h, t);
+    String html = R"raw(
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ESP32 Logger</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; text-align: center; margin: 20px; background-color: #f4f7f6; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; }
+        
+        /* Card Style */
+        .card { background: #fff; padding: 20px; margin-bottom: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        
+        /* Typography */
+        h2 { color: #2c3e50; margin-bottom: 10px; font-weight: 600;}
+        h3 { border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-top: 0; color: #555; font-size: 1.2rem; }
+        
+        /* Sensor Values */
+        .sensor-row { display: flex; justify-content: space-around; align-items: center; margin-bottom: 10px; }
+        .val { font-size: 2.2em; font-weight: bold; color: #3498db; }
+        .unit { font-size: 0.5em; color: #7f8c8d; font-weight: normal; margin-left: 2px; }
+        .timestamp-label { font-size: 0.85rem; color: #888; margin-top: 5px; font-style: italic; }
 
-    String html = "<h1>ESP32 Temp & Humidity Logger</h1>";
-    html += "<p><strong>Current Reading:</strong></p>";
-    if (isnan(h) || isnan(t)) {
-        html += "<p>Failed to read from DHT sensor!</p>";
-    } else {
-        html += "<p>Humidity: " + String(h, 1) + " %</p>";
-        html += "<p>Temperature: " + String(t, 1) + " &deg;C</p>";
-    }
+        /* Inputs & Buttons */
+        button, input[type=submit] { background: #3498db; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 1rem; margin-top: 15px; font-weight: 500; transition: background 0.2s;}
+        button:hover, input[type=submit]:hover { background: #2980b9; }
+        input { padding: 12px; box-sizing: border-box; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
+        
+        /* Form Layout Helpers */
+        .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .form-row input { flex: 1; min-width: 70px; } /* Ensures inputs assume full width on very small screens or share space on large ones */
 
-    html += "<p>Current ESP32 Time: <strong>" + getFormattedTime() + "</strong></p>"; // From getFormattedTime() global
-    html += "<p><a href=\"/download_data\">Download Historical Data (CSV)</a></p>";
-    html += "<p><a href=\"/settings\">Set Date & Time</a></p>";
-    html += "<p><em>Data logged every " + String(LOG_INTERVAL_SECONDS) + " seconds.</em></p>"; // From LOG_INTERVAL_SECONDS global
-    // html = "<meta http-equiv='refresh' content='5'>" + html; // Refresh every 5 seconds
+        /* Data Table Styles */
+        .table-scroll { max-height: 400px; overflow-y: auto; display: block; border: 1px solid #eee; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th, td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #eee; }
+        th { background-color: #f8f9fa; color: #555; font-weight: 600; position: sticky; top: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        tr:nth-child(even) { background-color: #fbfbfb; }
+        .loading { padding: 20px; color: #888; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>ESP32 Environment Logger</h2>
+        
+        <div class="card">
+            <h3>Current Readings</h3>
+            <div class="sensor-row">
+                <div>
+                    <div style="font-size:0.9rem; color:#888;">Temperature</div>
+                    <div class="val">)raw";
+    html += (isnan(t) ? "--" : String(t, 1));
+    html += R"raw(<span class="unit">&deg;C</span></div>
+                </div>
+                <div>
+                    <div style="font-size:0.9rem; color:#888;">Humidity</div>
+                    <div class="val">)raw";
+    html += (isnan(h) ? "--" : String(h, 1));
+    html += R"raw(<span class="unit">%</span></div>
+                </div>
+            </div>
+            <div class="timestamp-label">Measured at: )raw";
+    html += timeStr;
+    html += R"raw(</div>
+        </div>
 
-    server.send(200, "text/html", html);
+        <div class="card">
+            <h3>Log History</h3>
+            <div class="table-scroll">
+                <div id="dataTable" class="loading">Fetching data...</div>
+            </div>
+            <button onclick="location.href='/download'">Download CSV File</button>
+        </div>
+
+        <div class="card">
+            <h3>System Settings</h3>
+            
+            <form action="/set_time" method="GET">
+                <div style="text-align:left; margin-bottom:5px; font-weight:bold; color:#666;">Set Date & Time</div>
+                
+                <div class="form-row">
+                   <input type="number" name="Y" placeholder="Year" required style="flex:2">
+                   <input type="number" name="M" placeholder="Month" required>
+                   <input type="number" name="D" placeholder="Day" required>
+                </div>
+
+                <div class="form-row">
+                   <input type="number" name="h" placeholder="Hour" required>
+                   <input type="number" name="m" placeholder="Minute" required>
+                </div>
+                
+                <input type="submit" value="Update Time" style="background: #7f8c8d;"> 
+                
+                <div style="font-size: 0.8rem; color: #999; margin-top: 5px;">Current System Time: )raw";
+    html += timeStr;
+    html += R"raw(</div>
+            </form>
+            
+            <hr style="border:0; border-top:1px solid #eee; margin:25px 0;">
+
+            <form action="/set_wifi" method="POST">
+                <div style="text-align:left; margin-bottom:5px; font-weight:bold; color:#666;">WiFi Configuration</div>
+                <input type="text" name="ssid" placeholder="Network Name (SSID)" required>
+                <input type="password" name="pass" placeholder="Network Password">
+                <input type="submit" value="Save Credentials & Restart" style="background:#e74c3c">
+            </form>
+            <p><small style="color:#999;">Active SSID: )raw";
+    html += Settings.getWifiSSID();
+    html += R"raw(</small></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/download')
+            .then(response => {
+                if (!response.ok) throw new Error("No data");
+                return response.text();
+            })
+            .then(csvText => {
+                const lines = csvText.trim().split('\n');
+                if (lines.length < 2) {
+                    document.getElementById('dataTable').innerHTML = "<div style='padding:20px'>No data logged yet.</div>";
+                    return;
+                }
+
+                const headers = lines[0].split(',');
+                // Reverse to show newest first
+                const dataLines = lines.slice(1).reverse();
+
+                let tableHtml = '<table><thead><tr>';
+                headers.forEach(h => tableHtml += '<th>' + h + '</th>');
+                tableHtml += '</tr></thead><tbody>';
+
+                dataLines.forEach(line => {
+                    const cols = line.split(',');
+                    if(cols.length > 1) { 
+                        tableHtml += '<tr>';
+                        cols.forEach(col => tableHtml += '<td>' + col + '</td>');
+                        tableHtml += '</tr>';
+                    }
+                });
+                tableHtml += '</tbody></table>';
+
+                document.getElementById('dataTable').innerHTML = tableHtml;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('dataTable').innerHTML = "<div style='padding:20px; color:red'>Error loading data.</div>";
+            });
+        });
+    </script>
+</body>
+</html>
+)raw";
+    return html;
 }
 
-static void handleDownload_internal() {
-    resetWebServerActivityTimer_internal(); // Reset timer on activity
+// --- SETUP ROUTES (LAMBDA FUNCTIONS) ---
+static void setupWebServerRoutes_internal() {
 
-    if (!LittleFS.begin()) {
-        server.send(500, "text/plain", "LittleFS not mounted!");
-        return;
-    }
+    // 1. ROOT (Home Page)
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+        resetWebServerActivityTimer_internal();
+        request->send(200, "text/html", getRootHtml());
+    });
 
-    File dataFile = LittleFS.open(LOG_FILE_NAME, "r"); // Using global logFileName
-    if (!dataFile) {
-        server.send(404, "text/plain", "Data file not found on LittleFS!");
-        return;
-    }
+    // 2. DOWNLOAD (Streams file from LittleFS - Non-blocking)
+    server.on("/download", HTTP_GET, [](AsyncWebServerRequest *request){
+        resetWebServerActivityTimer_internal();
+        if (LittleFS.exists(LOG_FILE_NAME)) {
+            // send(FileSystem, Path, MimeType, Download=true)
+            request->send(LittleFS, LOG_FILE_NAME, "text/csv", true); 
+        } else {
+            request->send(404, "text/plain", "Log file not found.");
+        }
+    });
 
-    server.sendHeader("Content-Disposition", "attachment; filename=\"datalog.csv\"");
-    server.sendHeader("Content-type", "text/csv");
-    server.sendHeader("Connection", "close");
+    // 3. SET TIME (GET Request)
+    server.on("/set_time", HTTP_GET, [](AsyncWebServerRequest *request){
+        resetWebServerActivityTimer_internal();
+        
+        // Validate inputs
+        if (request->hasParam("Y") && request->hasParam("M") && request->hasParam("D") && request->hasParam("h") && request->hasParam("m")) {
+            struct tm t;
+            t.tm_year = request->getParam("Y")->value().toInt() - 1900;
+            t.tm_mon  = request->getParam("M")->value().toInt() - 1;
+            t.tm_mday = request->getParam("D")->value().toInt();
+            t.tm_hour = request->getParam("h")->value().toInt();
+            t.tm_min  = request->getParam("m")->value().toInt();
+            t.tm_sec  = 0;
+            t.tm_isdst = -1;
+            
+            struct timeval tv = { mktime(&t), 0 };
+            settimeofday(&tv, NULL); // Apply new time
 
-    const size_t bufferSize = 1024;
-    uint8_t buffer[bufferSize];
-    size_t bytesRead = 0;
+            // Update External RTC if available
+            if (RTCManager.isRunning()) {
+                RTCManager.setTime(t);
+                LOG_INFO(LOG_TAG, "External RTC updated via Web Interface.");
+            }
+            
+            request->send(200, "text/html", "<h1>Time Updated</h1><br><a href='/'>Back to Home</a>");
+        } else {
+            request->send(400, "text/plain", "Missing parameters");
+        }
+    });
 
-    LOG_INFO(LOG_TAG, "Serving %s...", LOG_FILE_NAME);
-    while (dataFile.available()) {
-        bytesRead = dataFile.read(buffer, bufferSize);
-        server.client().write(buffer, bytesRead);
-        yield();
-    }
-    LOG_INFO(LOG_TAG, "File transfer complete.");
+    // 4. SET WIFI (POST Request)
+    server.on("/set_wifi", HTTP_POST, [](AsyncWebServerRequest *request){
+        resetWebServerActivityTimer_internal();
+        
+        // Check if SSID was posted
+        if (request->hasParam("ssid", true)) {
+            String s = request->getParam("ssid", true)->value();
+            String p = request->hasParam("pass", true) ? request->getParam("pass", true)->value() : "";
+            
+            // Save to NVS via SettingsManager
+            Settings.saveWifiCredentials(s, p);
+            
+            request->send(200, "text/html", "<h1>Credentials Saved. Restarting...</h1>");
+            
+            // Allow response to send before restarting
+            delay(1000); 
+            ESP.restart();
+        } else {
+            request->send(400, "text/plain", "Missing SSID");
+        }
+    });
 
-    dataFile.close();
-}
-
-static void handleSetTimeForm_internal() {
-    resetWebServerActivityTimer_internal(); // Reset timer on activity
-
-    String html = "<h1>Set ESP32 Date & Time</h1>";
-    html += "<form action=\"/set_time_submit\" method=\"get\">";
-    html += "<label for=\"year\">Year:</label> <input type=\"number\" id=\"year\" name=\"year\" value=\"2025\" min=\"2000\" max=\"2100\"><br>";
-    html += "<label for=\"month\">Month:</label> <input type=\"number\" id=\"month\" name=\"month\" value=\"7\" min=\"1\" max=\"12\"><br>";
-    html += "<label for=\"day\">Day:</label> <input type=\"number\" id=\"day\" name=\"day\" value=\"5\" min=\"1\" max=\"31\"><br>";
-    html += "<label for=\"hour\">Hour:</label> <input type=\"number\" id=\"hour\" name=\"hour\" value=\"12\" min=\"0\" max=\"23\"><br>";
-    html += "<label for=\"minute\">Minute:</label> <input type=\"number\" id=\"minute\" name=\"minute\" value=\"0\" min=\"0\" max=\"59\"><br>";
-    html += "<label for=\"second\">Second:</label> <input type=\"number\" id=\"second\" name=\"second\" value=\"0\" min=\"0\" max=\"59\"><br>";
-    html += "<br><input type=\"submit\" value=\"Set Time\">";
-    html += "</form>";
-    html += "<p>Current ESP32 Time: <strong>" + getFormattedTime() + "</strong></p>";
-    html += "<p><a href=\"/\">Back to Home</a></p>";
-    server.send(200, "text/html", html);
-}
-
-static void handleSetTimeSubmit_internal() {
-    resetWebServerActivityTimer_internal(); // Reset timer on activity
-
-    int year = server.arg("year").toInt();
-    int month = server.arg("month").toInt();
-    int day = server.arg("day").toInt();
-    int hour = server.arg("hour").toInt();
-    int minute = server.arg("minute").toInt();
-    int second = server.arg("second").toInt();
-
-    struct tm timeinfo;
-    timeinfo.tm_year = year - 1900;
-    timeinfo.tm_mon = month - 1;
-    timeinfo.tm_mday = day;
-    timeinfo.tm_hour = hour;
-    timeinfo.tm_min = minute;
-    timeinfo.tm_sec = second;
-    timeinfo.tm_isdst = -1;
-
-    time_t newTime = mktime(&timeinfo);
-
-    if (newTime == (time_t)-1) {
-        String html = "<h1>Error Setting Time</h1><p>Invalid date/time provided. Please check values.</p>";
-        html += "<p><a href=\"/settings\">Back to Settings</a></p>";
-        server.send(200, "text/html", html);
-        LOG_WARN(LOG_TAG, "Invalid time provided by user.");
-        return;
-    }
-
-    struct timeval tv;
-    tv.tv_sec = newTime;
-    tv.tv_usec = 0;
-    settimeofday(&tv, NULL);
-
-    LOG_INFO(LOG_TAG, "Time set to: %s", getFormattedTime().c_str());
-
-    String html = "<h1>Time Set Successfully!</h1>";
-    html += "<p>New ESP32 Time: <strong>" + getFormattedTime() + "</strong></p>";
-    html += "<p>Remember, this time will be lost on power cycle without an external RTC module.</p>";
-    html += "<p><a href=\"/\">Back to Home</a></p>";
-    server.send(200, "text/html", html);
-}
-
-static void handleNotFound_internal() {
-    resetWebServerActivityTimer_internal(); // Reset timer on activity
-
-    String message = "404 Not Found\n\n";
-    message += "URI: ";
-    message += server.uri(); // Get the URI that was requested
-    message += "\nMethod: ";
-    message += (server.method() == HTTP_GET) ? "GET" : "POST";
-    message += "\nArguments: ";
-    message += server.args(); // Number of arguments
-    for (uint8_t i = 0; i < server.args(); i++) {
-        message += "\n " + server.argName(i) + ": " + server.arg(i);
-    }
-    LOG_WARN(LOG_TAG, "Unhandled request for URI: %s", server.uri().c_str());
-    server.send(404, "text/plain", message);
+    // 404 NOT FOUND
+    server.onNotFound([](AsyncWebServerRequest *request){
+        request->send(404, "text/plain", "404 Not Found");
+    });
 }

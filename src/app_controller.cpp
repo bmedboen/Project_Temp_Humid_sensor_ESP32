@@ -156,8 +156,6 @@ AppState run_state_interactive() {
         isInitialized = true;
     }
 
-    handleWebServerClients();
-
     if (stopWebServerIfIdle()) { 
         LOG_INFO(LOG_TAG, "Inactivity timeout reached.");
         stopInteractiveServices(); 
@@ -165,7 +163,8 @@ AppState run_state_interactive() {
         return STATE_PREPARE_SLEEP;
     }
 
-    yield(); 
+    delay(50); // Small delay to yield CPU 
+
     return STATE_INTERACTIVE; 
 }
 

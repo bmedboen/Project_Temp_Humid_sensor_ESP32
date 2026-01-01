@@ -16,6 +16,7 @@
 // These need to be RTC_DATA_ATTR to persist across deep sleep
 RTC_DATA_ATTR static float s_lastLoggedHumidity = NAN;
 RTC_DATA_ATTR static float s_lastLoggedTemperature = NAN;
+RTC_DATA_ATTR static char s_lastLoggedTime[32] = "N/A";
 
 bool DataLogger_init() {
   LOG_DEBUG(LOG_TAG, "Initializing LittleFS...");
@@ -57,6 +58,9 @@ bool DataLogger_logSensorData(float temperature, float humidity) {
     // Update the static global variables with the successfully logged data
     s_lastLoggedTemperature = temperature;
     s_lastLoggedHumidity = humidity;    
+
+    strncpy(s_lastLoggedTime, timestamp.c_str(), sizeof(s_lastLoggedTime)); // Store timestamp
+    s_lastLoggedTime[sizeof(s_lastLoggedTime) - 1] = 0; // Null-terminate for safety
   }
 
   File dataFile = LittleFS.open(LOG_FILE_NAME, "a"); // Use LOG_FILE_NAME from config.h
@@ -83,4 +87,8 @@ float DataLogger_getLastHumidity() {
 
 float DataLogger_getLastTemperature() {
     return s_lastLoggedTemperature;
+}
+
+String DataLogger_getLastLogTime() {
+    return String(s_lastLoggedTime);
 }
