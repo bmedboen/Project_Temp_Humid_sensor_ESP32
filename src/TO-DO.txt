@@ -4,12 +4,18 @@ TO-DO:
     - Når jeg trykker på knapp bør den fornye tiden som enheten er våken og reagere i logg
 - Async fullskala
     - vurdere om async web er nok?
-- Maskintilstand - ok
+- Maskintilstand - ok for now
+    - Nå har vi en flag state machine. 
+        - vurdere en context struct som samler de løse flaggene i en struct
+        - eller: at tilstandsmaskin heller regarer på hendelser definert av en event enum
+        - obj basert tilstandsmaskin (men antagligvis overkill) 
     - NB! sjekk hva som skjer i state interactive hvis man er pålogget lenge! vil den da gjøre logging "parallelt?
 - RTC clock - ok for now
     - gjøre en sjekk mellom RTC og NTP av og til (en gang i halvåret eller ved reboot typ)
 - SD card
 - BLE
+- Gjøre oled smart
+    - hvordan displaye ting smartere? hvordan displaye en logg? etc.
 - Log files - ok
 - Wifi conncetion - ok for now
     - dual atp + stp - ok

@@ -23,6 +23,11 @@ void OLEDDisplay_clear();
 void OLEDDisplay_showSensorData(float temperature, float humidity);
 
 /**
+ * @brief Displays connection status, IP address and Hostname (URL).
+ */
+void OLEDDisplay_showNetworkStatus(String ip, String hostname);
+
+/**
  * @brief Turns off the OLED display to save power.
  */
 void OLEDDisplay_turnOff();

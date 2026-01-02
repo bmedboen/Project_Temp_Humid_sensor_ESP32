@@ -19,16 +19,17 @@ static bool _startAP_internal() {
     WiFi.softAP(AP_SSID, AP_PASSWORD); 
     
     // Wait for IP address assignment (usually very fast for AP)
-    unsigned long start = ::millis(); // Use :: to access global C function
+    unsigned long start = ::millis();
     while (WiFi.softAPIP() == IPAddress(0,0,0,0)) {
         if (::millis() - start > 2000) { // Short timeout (2s) is enough for AP
             LOG_ERROR(LOG_TAG, "AP Setup Failed.");
             return false;
         }
-        ::delay(100); // Use :: to access global C function
+        ::delay(100); 
     }
 
-    LOG_INFO(LOG_TAG, "AP Started. IP: %s", WiFi.softAPIP().toString().c_str());
+    String ipAddr = WiFi.softAPIP().toString();
+    LOG_INFO(LOG_TAG, "AP Started. IP: %s", ipAddr.c_str());
     return true;
 }
 
@@ -52,17 +53,18 @@ static bool _connectSTA_internal(unsigned long timeout_ms) {
     LOG_INFO(LOG_TAG, "Connecting to: %s", ssid.c_str());
     WiFi.begin(ssid.c_str(), pass.c_str());
 
-    unsigned long start = ::millis(); // Use :: to access global C function
+    unsigned long start = ::millis(); 
     while (WiFi.status() != WL_CONNECTED) {
         // Check timeout
         if (::millis() - start > timeout_ms) {
             LOG_INFO(LOG_TAG, "STA Wait Timeout (waited %lu ms). Continuing in background...", timeout_ms);
             return false;
         }
-        ::delay(100); // Use :: to access global C function
+        ::delay(100);
     }
 
-    LOG_INFO(LOG_TAG, "STA Connected! IP: %s", WiFi.localIP().toString().c_str());
+    String ipAddr = WiFi.localIP().toString();
+    LOG_INFO(LOG_TAG, "STA Connected! IP: %s", ipAddr.c_str());
 
     // --- Unique mDNS Hostname Logic ---
     
@@ -123,6 +125,23 @@ bool wifi_manager_start_Interactive_DualMode() {
 
     // Return true if AP works (Primary interface)
     return apSuccess;
+}
+
+String wifi_manager_get_hostname() {
+    // 1. Get Base Name from config
+    String hostname = MDNS_HOSTNAME;
+    
+    // 2. Get MAC Address to make the name unique
+    String mac = WiFi.macAddress();
+    // Format is "AA:BB:CC:DD:EE:FF". We remove colons.
+    mac.replace(":", ""); 
+    
+    // 3. Append the last 4 characters of the MAC
+    String suffix = mac.substring(8); 
+    hostname += "-" + suffix;
+    hostname.toLowerCase(); // mDNS standards prefer lowercase
+    
+    return hostname;
 }
 
 void wifi_manager_turnOff() {

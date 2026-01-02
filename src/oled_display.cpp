@@ -83,6 +83,38 @@ void OLEDDisplay_showSensorData(float temperature, float humidity) {
   display.display(); // Show everything on the display
 }
 
+void OLEDDisplay_showNetworkStatus(String ip, String hostname) {
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+    display.setTextSize(1);
+
+    // 1. Header
+    display.setCursor(0, 0);
+    display.println(F("WiFi Connected!")); 
+    // Draw a line under the header for better visibility
+    display.drawLine(0, 9, 128, 9, SSD1306_WHITE);
+
+    // 2. IP Address (Compact format: "IP: 192.168...")
+    display.setCursor(0, 13);
+    display.print(F("IP: "));
+    display.println(ip); 
+
+    // 3. URL Section
+    display.setCursor(0, 28);
+    display.println(F("Address:")); 
+    
+    // 4. Split the URL to fit the screen width (max 21 chars)
+    // We print the unique hostname on one line...
+    display.setCursor(0, 39);     
+    display.println(hostname);    // e.g., "esp32logger-a1b2"
+    
+    // ...and the suffix on the next line.
+    display.setCursor(0, 49);     
+    display.println(F(".local")); // e.g., ".local"
+
+    display.display();
+}
+
 void OLEDDisplay_turnOff() {
   display.clearDisplay();
   display.display(); // Clear the display buffer and update the physical display

@@ -26,6 +26,12 @@ bool wifi_manager_connect_STA();
 bool wifi_manager_start_Interactive_DualMode();
 
 /**
+ * @brief Returns the unique hostname used by mDNS.
+ * Format: base-name + last 4 chars of MAC (e.g., "esp32logger-a1b2")
+ */
+String wifi_manager_get_hostname();
+
+/**
  * @brief Turns off the Wi-Fi radio completely.
  */
 void wifi_manager_turnOff();
