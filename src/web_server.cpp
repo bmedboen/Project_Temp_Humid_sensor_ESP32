@@ -300,14 +300,7 @@ static void setupWebServerRoutes_internal() {
             t.tm_sec  = 0;
             t.tm_isdst = -1;
             
-            struct timeval tv = { mktime(&t), 0 };
-            settimeofday(&tv, NULL); // Apply new time
-
-            // Update External RTC if available
-            if (RTCManager.isRunning()) {
-                RTCManager.setTime(t);
-                LOG_INFO(LOG_TAG, "External RTC updated via Web Interface.");
-            }
+            TimeManager_setTime(t, true);
             
             request->send(200, "text/html", "<h1>Time Updated</h1><br><a href='/'>Back to Home</a>");
         } else {

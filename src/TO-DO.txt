@@ -1,14 +1,18 @@
 TO-DO:
-- Async web
+- Async web - ok
 - Knapp
-    - Når jeg trykker på knapp bør den fornye tiden og reagere i logg
+    - Når jeg trykker på knapp bør den fornye tiden som enheten er våken og reagere i logg
 - Async fullskala
+    - vurdere om async web er nok?
 - Maskintilstand - ok
-- RTC clock - ok
+- RTC clock - ok for now
+    - gjøre en sjekk mellom RTC og NTP av og til (en gang i halvåret eller ved reboot typ)
 - SD card
 - BLE
 - Log files - ok
-- Wifi conncetion - ok
+- Wifi conncetion - ok for now
+    - dual atp + stp
+    - men hvordan kombinere det med ip adresse som er statisk / ikke statisk? og ev nettside?
 - Dashboard på nett / bedre nettside. 
     - Splittte web side i flere filer
     - Ha en egen nettside som lagrer info slik at jeg ikke alltid må vekke esp for å se data
@@ -16,13 +20,19 @@ TO-DO:
 - Dynamisk konfig
 - Test kode
 - Integrasjon med ESP home og google home
-- Vurdere obj kode - use hybrid. hardware layer = obj. business logic = modular C/C++. cross cutting = global vars  
-- Vurdere standarder - AUTOSAR og MISRA C++
-- Passord handling - ok for now. Vurdere secrets ini. 
-    Hvordan unngå at esp32 må starte på nytt hvis jeg endrer wifi passord via nettside?
+- Vurdere obj kode - ok
+    - use hybrid. hardware layer = obj. business logic = modular C/C++. cross cutting = global vars  
+- Vurdere standarder + best practice for embedded
+    - bruke :: for c funskjoner og annen best practice
+    - AUTOSAR og MISRA C++
+- Passord handling - ok for now. 
+    - Vurdere secrets ini. 
+    - Hvordan unngå at esp32 må starte på nytt hvis jeg endrer wifi passord via nettside?
 - CI/CD opplegg
+- prodgrade at scale
 
 Kjopeliste ali:
 - black/white screen
 - AA batteriholder
 - 2stk beskyttet 1860 batteri
+- 2 stk LoRa moduler
