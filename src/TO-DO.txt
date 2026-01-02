@@ -5,14 +5,18 @@ TO-DO:
 - Async fullskala
     - vurdere om async web er nok?
 - Maskintilstand - ok
+    - NB! sjekk hva som skjer i state interactive hvis man er pålogget lenge! vil den da gjøre logging "parallelt?
 - RTC clock - ok for now
     - gjøre en sjekk mellom RTC og NTP av og til (en gang i halvåret eller ved reboot typ)
 - SD card
 - BLE
 - Log files - ok
 - Wifi conncetion - ok for now
-    - dual atp + stp
+    - dual atp + stp - ok
+    - local name - ok
     - men hvordan kombinere det med ip adresse som er statisk / ikke statisk? og ev nettside?
+    - få wifi navn unikt
+    - vurder og også bruke local for ap mode
 - Dashboard på nett / bedre nettside. 
     - Splittte web side i flere filer
     - Ha en egen nettside som lagrer info slik at jeg ikke alltid må vekke esp for å se data

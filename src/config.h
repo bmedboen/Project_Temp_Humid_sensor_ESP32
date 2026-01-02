@@ -58,6 +58,11 @@ constexpr unsigned int WEBSERVER_PORT = 80; // Standard HTTP port
 constexpr unsigned long WEB_SERVER_INACTIVITY_TIMEOUT = 90 * 1000; // Inactivity in ms to go to sleep
 constexpr bool ENABLE_WEB_SERVER_ON_TIMER_WAKEUP = false; // Activate Web Server on Timer Wakeup
 
+// mDNS Configuration ---
+// This will be the prefix. The MAC address will be appended automatically.
+// Example result: http://esp32logger-a1b2.local
+constexpr const char* MDNS_HOSTNAME = "esp32logger";
+
 // --- OLED Display Configuration ---
 constexpr uint8_t OLED_RESET_PIN = -1; // Reset pin for SSD1306 (or -1 if sharing Arduino reset)
 constexpr uint8_t OLED_SCREEN_WIDTH = 128; // OLED display width, in pixels

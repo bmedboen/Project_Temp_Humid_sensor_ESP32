@@ -42,7 +42,11 @@ String SettingsManager::getWifiSSID() {
     // Safety check
     if (!_isInitialized) return String(DEFAULT_WIFI_SSID);
     
-    // Logic: Get string from NVS. If key "ssid" doesn't exist, return DEFAULT_WIFI_SSID.
+    // Logic: Get string from NVS. If key "ssid" doesn't exist, return DEFAULT_WIFI_SSID.       
+    if (!_prefs.isKey("ssid")) {
+        return String(DEFAULT_WIFI_SSID);
+    }
+
     String ssid = _prefs.getString("ssid", DEFAULT_WIFI_SSID);
     
     // Logging for debugging (Optional: remove if too verbose)
@@ -58,7 +62,12 @@ String SettingsManager::getWifiSSID() {
 
 String SettingsManager::getWifiPassword() {
     if (!_isInitialized) return String(DEFAULT_WIFI_PASS);
-    // Same logic for password
+    
+    // FIX: Samme sjekk for passord
+    if (!_prefs.isKey("pass")) {
+        return String(DEFAULT_WIFI_PASS);
+    }
+
     return _prefs.getString("pass", DEFAULT_WIFI_PASS);
 }
 

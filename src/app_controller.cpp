@@ -56,8 +56,8 @@ static void startInteractiveServices() {
     }
 
     // 2. Initialize Wi-Fi
-    if (wifi_manager_init_AP()) {
-        LOG_INFO(LOG_TAG, "WiFi AP started.");
+    if (wifi_manager_start_Interactive_DualMode()) {
+        LOG_INFO(LOG_TAG, "WiFi Dual Mode started.");
         
         // 3. Start the Web Server
         if (activateWebServer()) {
@@ -66,7 +66,7 @@ static void startInteractiveServices() {
              LOG_ERROR(LOG_TAG, "WebServer failed to start.");
         }
     } else {
-        LOG_ERROR(LOG_TAG, "WiFi AP failed! WebServer skipped.");
+        LOG_ERROR(LOG_TAG, "WiFi failed! WebServer skipped.");
     }
 }
 
