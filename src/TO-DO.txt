@@ -40,6 +40,7 @@ TO-DO:
     - Hvordan unngå at esp32 må starte på nytt hvis jeg endrer wifi passord via nettside?
 - CI/CD opplegg
 - prodgrade at scale
+- vurdere å bytte til ESP-IDF istendfor aurdino
 
 Kjopeliste ali:
 - black/white screen

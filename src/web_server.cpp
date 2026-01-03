@@ -96,6 +96,7 @@ static bool isWebServerTimeoutReached_internal() {
 static void stopWebServer_internal() {
     if (isServerRunning) {
         server.end(); // Use .end() for AsyncWebServer
+        delay(100); // Allow time for server to close connections
         isServerRunning = false;
         LOG_INFO(LOG_TAG, "Server stopped due to inactivity.");
     }

@@ -22,7 +22,18 @@ static AppState lastLoggedState = STATE_NONE;
 bool stayAwakeForInteraction = false; 
 
 void setup() {
+  delay(100); // Stabilize after power on/reset
   Serial.begin(115200);
+
+  // For debugging purposes:
+  // Wait for USB Serial to become available
+    // This gives you time to see the logs after a wakeup
+    unsigned long start = millis();
+    while (!Serial && millis() - start < 5000) {
+        delay(10);
+    }
+    delay(500); // Extra cushion
+
   delay(100); // Allow time for Serial to initialize
   LOG_INFO(LOG_TAG, "--- System Starting Up ---");
 }

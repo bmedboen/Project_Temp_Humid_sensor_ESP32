@@ -1,14 +1,18 @@
 // dht_sensor.cpp
 
+#include "dht_sensor.h"
 #include "config.h"
-#include "system_logger.h" // New include for logging
+#include "system_logger.h" 
 
-#define LOG_TAG "DHT" // Define a tag for DHT module logs
+#define LOG_TAG "DHT" 
 
-// Create DHT object
-DHT dht(DHT_PIN, DHT_TYPE);
+// Initialize DHT object using the definitions from config.h/platformio.ini
+// DHT_PIN comes from board definition
+// DHT_TYPE_DEF comes from SENSOR_TYPE in platformio.ini
+DHT dht(DHT_PIN, DHT_TYPE_DEF);
 
 bool DHTSensor_init() {
+  LOG_INFO(LOG_TAG, "Initializing DHT Sensor (Type ID: %d, Pin: %d)", DHT_TYPE_DEF, DHT_PIN);
   dht.begin();
   return true;
 }

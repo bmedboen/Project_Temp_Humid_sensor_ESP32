@@ -119,8 +119,9 @@ AppState run_state_init() {
 AppState run_state_check_wakeup(bool &stayAwakeFlag) {    
     esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
 
-    if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0) {
-        LOG_INFO(LOG_TAG, "Wakeup reason: Button Press (EXT0)");
+    // Check for both Classic (EXT0) and New (GPIO) wakeup causes
+    if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0 || wakeup_reason == ESP_SLEEP_WAKEUP_GPIO) {
+        LOG_INFO(LOG_TAG, "Wakeup reason: Button Press");
         
         // Show cached data immediately for responsiveness
         if (OLEDDisplay_init()) {

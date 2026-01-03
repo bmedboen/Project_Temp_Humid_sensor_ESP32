@@ -146,6 +146,7 @@ String wifi_manager_get_hostname() {
 
 void wifi_manager_turnOff() {
     LOG_INFO(LOG_TAG, "Turning off Wi-Fi radio...");
+    WiFi.softAPdisconnect(true);
     WiFi.disconnect(true);  // true = turn off WiFi radio
     WiFi.mode(WIFI_OFF);
 }
