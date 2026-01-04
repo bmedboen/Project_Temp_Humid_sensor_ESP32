@@ -1,122 +1,137 @@
 // oled_display.cpp
 
 #include "oled_display.h"
-#include "config.h" // For OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, OLED_I2C_ADDRESS, OLED_RESET_PIN
-#include "system_logger.h" // New include for logging
-
-#define LOG_TAG "OLED" // Define a tag for OLEDDisplay module logs
-
+#include "config.h"
+#include "system_logger.h"
+#include "data_logger.h"
+#include "wifi_manager.h"
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
-Adafruit_SSD1306 display(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET_PIN);
+#define LOG_TAG "OLED"
+
+// Internal static variables
+static Adafruit_SSD1306 display(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET_PIN);
+static DisplayMode currentMode = OLED_MODE_OFF;
+static String currentMessage = "";
+static int currentProgress = -1;
 
 bool OLEDDisplay_init() {
-  // Initialize I2C (Wire) for the OLED display
-  Wire.begin();
+    // Initialize I2C with explicit pins from config/pinout
+    if (!Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN)) {
+        LOG_ERROR(LOG_TAG, "I2C initialization failed");
+        return false;
+    }
 
-  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-  if(!display.begin(SSD1306_SWITCHCAPVCC, OLED_I2C_ADDRESS)) {
-    LOG_ERROR(LOG_TAG, "SSD1306 allocation failed");
-    return false;
-  }
+    // Initialize SSD1306
+    if(!display.begin(SSD1306_SWITCHCAPVCC, OLED_I2C_ADDRESS)) {
+        LOG_ERROR(LOG_TAG, "SSD1306 allocation failed");
+        return false;
+    }
 
-//   // --- TEMPORARY TEST CODE: Show something and pause ---
-//   display.clearDisplay();
-//   display.setTextSize(1);
-//   display.setTextColor(SSD1306_WHITE);
-//   display.setCursor(0,0);
-//   display.println(F("Hello OLED!"));
-//   display.println(F("If you see this,"));
-//   display.println(F("it's working!"));
-//   display.display(); // Show what's in the buffer
-//   delay(3000); // *** TEMPORARY DELAY: Keep display on for 3 seconds ***
-//   // --- END TEMPORARY TEST CODE ---
-
-  // Initial display setup (no blocking delay here)
-  display.display(); // Show initial Adafruit splash screen/buffer content
-  display.clearDisplay(); // Clear the buffer immediately
-  display.display(); // Update the physical display with the clear buffer
-  return true;
+    display.clearDisplay();
+    display.display();
+    return true;
 }
 
-void OLEDDisplay_clear() {
-  display.clearDisplay();
-  display.display();
+void OLEDDisplay_setMode(DisplayMode mode) {
+    if (mode == OLED_MODE_OFF) {
+        OLEDDisplay_turnOff();
+        return;
+    }
+    currentMode = mode;
+    // Ensure display hardware is awake
+    display.ssd1306_command(SSD1306_DISPLAYON);
+    OLEDDisplay_refresh();
 }
 
-void OLEDDisplay_showSensorData(float temperature, float humidity) {
-  // Ensure the display is active before drawing
-  display.ssd1306_command(SSD1306_DISPLAYON);
-  display.clearDisplay(); // Clear the display buffer
-
-  display.setTextSize(2); // Large text
-  display.setTextColor(SSD1306_WHITE); // White text
-
-  // --- HEADER: "Last reading:" ---
-  display.setTextSize(2); //  Large text for (12x16 pixels per char)
-  display.setCursor(0, 0); // Start at top-left
-  display.println(F("Last read:")); 
-
-  // Display Temperature
-  display.setCursor(0, 16); // Next line
-  display.print(F("T: "));
-  if (isnan(temperature)) {
-    display.print(F("N/A"));
-  } else {
-    display.print(String(temperature, 1)); // Display with 1 decimal place
-  }
-  display.println(F(" *C")); // Print unit and move cursor to next line (Y=16+16=32)
-
-  // Display Humidity
-  display.setCursor(0, 32); // Move down for humidity
-  display.print(F("H: "));
-  if (isnan(humidity)) {
-    display.print(F("N/A"));
-  } else {
-    display.print(String(humidity, 1)); // Display with 1 decimal place
-  }
-  display.println(F(" %")); // Print unit and move cursor to next line (Y=32+16=48)
-
-  display.display(); // Show everything on the display
+void OLEDDisplay_showMessage(const char* msg, int progress) {
+    currentMessage = msg;
+    currentProgress = progress;
+    currentMode = OLED_MODE_MESSAGE;
+    OLEDDisplay_refresh();
 }
 
-void OLEDDisplay_showNetworkStatus(String ip, String hostname) {
+// --- Internal Scene Drawing Functions ---
+
+static void drawHeader(const char* title) {
+    display.setTextSize(1);
+    display.setCursor(0, 0);
+    display.println(title);
+    display.drawLine(0, 10, 128, 10, SSD1306_WHITE);
+}
+
+static void drawSensorScene() {
+    drawHeader("ENVIRONMENT LOG");
+    
+    // Pull data directly from DataLogger
+    float t = DataLogger_getLastTemperature();
+    float h = DataLogger_getLastHumidity();
+    String timestamp = DataLogger_getLastLogTime();
+
+    display.setCursor(0, 16);
+    display.setTextSize(2);
+    
+    if (isnan(t)) display.println("T: --.- C");
+    else display.printf("T: %.1f C\n", t);
+    
+    if (isnan(h)) display.println("H: --.- %");
+    else display.printf("H: %.1f %%", h);
+
+    display.setCursor(0, 55);
+    display.setTextSize(1);
+    display.printf("@ %s", timestamp.c_str());
+}
+
+static void drawNetworkScene() {
+    drawHeader("NETWORK STATUS");
+    display.setTextSize(1);
+    display.setCursor(0, 18);
+
+    // Pull status directly from WiFi library
+    if (WiFi.status() == WL_CONNECTED) {
+        display.println("Status: Connected");
+        display.printf("IP:  %s\n", WiFi.localIP().toString().c_str());
+        display.printf("URL: %s.local", wifi_manager_get_hostname().c_str());
+    } else {
+        display.println("Status: Connecting...");
+        display.printf("AP:  %s\n", AP_SSID);
+        display.printf("IP:  %s", WiFi.softAPIP().toString().c_str());
+    }
+}
+
+static void drawMessageScene() {
+    display.setTextSize(1);
+    display.setCursor(10, 25);
+    display.println(currentMessage);
+
+    if (currentProgress >= 0) {
+        int barWidth = map(currentProgress, 0, 100, 0, 100);
+        display.drawRect(14, 45, 100, 8, SSD1306_WHITE);
+        display.fillRect(14, 45, barWidth, 8, SSD1306_WHITE);
+    }
+}
+
+void OLEDDisplay_refresh() {
+    if (currentMode == OLED_MODE_OFF) return;
+
     display.clearDisplay();
     display.setTextColor(SSD1306_WHITE);
-    display.setTextSize(1);
 
-    // 1. Header
-    display.setCursor(0, 0);
-    display.println(F("WiFi Connected!")); 
-    // Draw a line under the header for better visibility
-    display.drawLine(0, 9, 128, 9, SSD1306_WHITE);
-
-    // 2. IP Address (Compact format: "IP: 192.168...")
-    display.setCursor(0, 13);
-    display.print(F("IP: "));
-    display.println(ip); 
-
-    // 3. URL Section
-    display.setCursor(0, 28);
-    display.println(F("Address:")); 
-    
-    // 4. Split the URL to fit the screen width (max 21 chars)
-    // We print the unique hostname on one line...
-    display.setCursor(0, 39);     
-    display.println(hostname);    // e.g., "esp32logger-a1b2"
-    
-    // ...and the suffix on the next line.
-    display.setCursor(0, 49);     
-    display.println(F(".local")); // e.g., ".local"
-
+    switch (currentMode) {
+        case OLED_MODE_SENSORS: drawSensorScene();  break;
+        case OLED_MODE_NETWORK: drawNetworkScene(); break;
+        case OLED_MODE_MESSAGE: drawMessageScene(); break;
+        default: break;
+    }
     display.display();
 }
 
 void OLEDDisplay_turnOff() {
-  display.clearDisplay();
-  display.display(); // Clear the display buffer and update the physical display
-  display.ssd1306_command(SSD1306_DISPLAYOFF); // Turn off the display
+    currentMode = OLED_MODE_OFF;
+    display.clearDisplay();
+    display.display();
+    display.ssd1306_command(SSD1306_DISPLAYOFF);
+    LOG_INFO(LOG_TAG, "Display turned off (Hardware Command)");
 }

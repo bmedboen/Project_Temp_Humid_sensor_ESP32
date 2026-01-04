@@ -27,6 +27,7 @@ TO-DO:
     - Splittte web side i flere filer
     - Ha en egen nettside som lagrer info slik at jeg ikke alltid må vekke esp for å se data
 - OTA update
+- Lage i2c_manager som håndterer oppstart av bussen for både RTC og OLED, slik at vi unngår dobbelt-initialisering
 - Dynamisk konfig
 - Test kode
 - Integrasjon med ESP home og google home
@@ -38,6 +39,8 @@ TO-DO:
 - Passord handling - ok for now. 
     - Vurdere secrets ini. 
     - Hvordan unngå at esp32 må starte på nytt hvis jeg endrer wifi passord via nettside?
+- Hvorfor trenger jeg egentlig time_last_logged_ms som global rtc variabel? kan jeg ikke bare henta fra datalogger?
+    - Og er ting egentlig definert dobbelt opp i datalogger?
 - CI/CD opplegg
 - prodgrade at scale
 - vurdere å bytte til ESP-IDF istendfor aurdino

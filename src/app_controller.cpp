@@ -28,13 +28,6 @@ static bool s_isShowingNetworkInfo = false;
 static unsigned long s_networkInfoStartTime = 0;
 
 // --- Helper Functions ---
-// Refreshes the OLED with the last known sensor values
-static void refreshSensorScreen() {
-    float t = DataLogger_getLastTemperature();
-    float h = DataLogger_getLastHumidity();
-    OLEDDisplay_showSensorData(t, h);
-}
-
 static void setupHardware() {
     
     LOG_INFO(LOG_TAG, "Hardware: Setting up hardware...");
@@ -60,29 +53,21 @@ static void startInteractiveServices() {
     LOG_INFO(LOG_TAG, "Starting Interactive Services...");
 
     // 1. Initialize and update OLED
-    if (OLEDDisplay_init()) {
-        refreshSensorScreen();
-        LOG_INFO(LOG_TAG, "OLED active.");
+    if (OLEDDisplay_init()) {   
+        // Just set the initial scene
+        OLEDDisplay_setMode(OLED_MODE_SENSORS);
+        LOG_INFO(LOG_TAG, "OLED initialized and showing sensors.");
     }
 
     // 2. Initialize Wi-Fi
-    if (wifi_manager_start_Interactive_DualMode()) {
+    if (wifi_manager_start_Interactive_DualMode()) {        
         LOG_INFO(LOG_TAG, "WiFi Dual Mode started.");
 
-        // --- Network Status Display Logic ---
-        // Check if we managed to connect to Home WiFi within the short timeout
-        if (WiFi.status() == WL_CONNECTED) {
-            
-            // Get the centralized hostname directly from the manager
-            String host = wifi_manager_get_hostname();
-
-            LOG_INFO(LOG_TAG, "Showing network info on OLED.");
-            OLEDDisplay_showNetworkStatus(WiFi.localIP().toString(), host);
-            
-            // Set the flags so the main loop knows to switch back later
-            s_isShowingNetworkInfo = true;
-            s_networkInfoStartTime = ::millis();
-        }
+        // Switch to network view. OLED will update itself as IP becomes ready.
+        OLEDDisplay_setMode(OLED_MODE_NETWORK);
+        
+        s_isShowingNetworkInfo = true;
+        s_networkInfoStartTime = ::millis();
         
         // 3. Start the Web Server
         if (activateWebServer()) {
@@ -125,7 +110,7 @@ AppState run_state_check_wakeup(bool &stayAwakeFlag) {
         
         // Show cached data immediately for responsiveness
         if (OLEDDisplay_init()) {
-            refreshSensorScreen();
+            OLEDDisplay_setMode(OLED_MODE_SENSORS);
         }
         
         delay(50); // Debounce
@@ -138,10 +123,6 @@ AppState run_state_check_wakeup(bool &stayAwakeFlag) {
     } else {
         LOG_INFO(LOG_TAG, "Wakeup reason: System Reset / First Boot");
         
-        // Show N/A on OLED
-        if (OLEDDisplay_init()) {
-            OLEDDisplay_showSensorData(NAN, NAN);
-        }
         stayAwakeFlag = true;
     }
     
@@ -180,15 +161,17 @@ AppState run_state_interactive() {
         isInitialized = true;
     }
 
-    // Check if we are currently showing the Network Info screen
+    // OLED periodic UI refresh to handle dynamic data (like IP assignment)
+    static unsigned long lastRefresh = 0;
+    if (millis() - lastRefresh > 500) {
+        OLEDDisplay_refresh();
+        lastRefresh = millis();
+    }
+
     if (s_isShowingNetworkInfo) {
-        // Check if 10 seconds have passed
         if (::millis() - s_networkInfoStartTime > 10000) {
-            
             LOG_INFO(LOG_TAG, "Reverting OLED to Sensor Data.");
-            refreshSensorScreen();
-            
-            // Stop checking
+            OLEDDisplay_setMode(OLED_MODE_SENSORS);
             s_isShowingNetworkInfo = false; 
         }
     }
@@ -197,8 +180,6 @@ AppState run_state_interactive() {
         LOG_INFO(LOG_TAG, "Inactivity timeout reached.");
         stopInteractiveServices(); 
         isInitialized = false; 
-
-        s_isShowingNetworkInfo = false;
 
         return STATE_PREPARE_SLEEP;
     }
