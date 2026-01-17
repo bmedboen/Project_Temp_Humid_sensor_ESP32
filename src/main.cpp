@@ -25,17 +25,32 @@ void setup() {
   delay(500); // Stabilize after power on/reset
   Serial.begin(115200);
 
-  // For debugging purposes:
-  // // Wait for USB Serial to become available
-  //   // This gives you time to see the logs after a wakeup
-  //   unsigned long start = millis();
-  //   while (!Serial && millis() - start < 5000) {
-  //       delay(10);
-  //   }
-  //   delay(500); // Extra cushion
+  // Serial.setTxTimeoutMs(0); 
 
-  delay(500); // Allow time for Serial to initialize
+  // 2. Vent på PC-tilkobling (5 sekunder er bra)
+  unsigned long start = millis();
+  while (!Serial && (millis() - start < 5000)) {
+      delay(10);
+  }
+
+  // 3. KRITISK: Gi USB-bufferen på PC-en tid til å stabilisere seg
+  // Etter at !Serial blir true, trenger OS-en ofte noen millisekunder 
+  // på å faktisk begynne å tegne i terminalvinduet.
+  delay(1000); 
+
+  // 4. Send en tydelig "banner" for å tømme PC-bufferen
+  Serial.println("\n\n\n");
+  Serial.println("========================================");
+  Serial.println("       ESP32-C6 BOOT SEQUENCER          ");
+  Serial.println("========================================");
+  
+  // 5. Nå kan du logge de første meldingene
   LOG_INFO(LOG_TAG, "--- System Starting Up ---");
+  
+  // Nå vil resten av loopen og tilstandsmaskinen starte
+  
+  // Gi PC-en et lite halvsekund på å faktisk tegne teksten over
+  delay(500);
 }
 
 void loop() {

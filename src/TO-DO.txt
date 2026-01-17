@@ -1,28 +1,16 @@
 TO-DO:
-- Async web - ok
+
 - Knapp
     - Når jeg trykker på knapp bør den fornye tiden som enheten er våken og reagere i logg
 - Async fullskala
     - vurdere om async web er nok?
-- Maskintilstand - ok for now
-    - Nå har vi en flag state machine. 
-        - vurdere en context struct som samler de løse flaggene i en struct
-        - eller: at tilstandsmaskin heller regarer på hendelser definert av en event enum
-        - obj basert tilstandsmaskin (men antagligvis overkill) 
-    - NB! sjekk hva som skjer i state interactive hvis man er pålogget lenge! vil den da gjøre logging "parallelt?
-- RTC clock - ok for now
-    - gjøre en sjekk mellom RTC og NTP av og til (en gang i halvåret eller ved reboot typ)
+
+
 - SD card
 - BLE
-- Gjøre oled smart
-    - hvordan displaye ting smartere? hvordan displaye en logg? etc.
-- Log files - ok
-- Wifi conncetion - ok for now
-    - dual atp + stp - ok
-    - local name - ok
-    - men hvordan kombinere det med ip adresse som er statisk / ikke statisk? og ev nettside?
-    - få wifi navn unikt
-    - vurder og også bruke local for ap mode
+
+
+- Log files 
 - Dashboard på nett / bedre nettside. 
     - Splittte web side i flere filer
     - Ha en egen nettside som lagrer info slik at jeg ikke alltid må vekke esp for å se data
@@ -31,22 +19,46 @@ TO-DO:
 - Dynamisk konfig
 - Test kode
 - Integrasjon med ESP home og google home
-- Vurdere obj kode - ok
-    - use hybrid. hardware layer = obj. business logic = modular C/C++. cross cutting = global vars  
+
 - Vurdere standarder + best practice for embedded
     - bruke :: for c funskjoner og annen best practice
     - AUTOSAR og MISRA C++
-- Passord handling - ok for now. 
-    - Vurdere secrets ini. 
-    - Hvordan unngå at esp32 må starte på nytt hvis jeg endrer wifi passord via nettside?
+
 - Hvorfor trenger jeg egentlig time_last_logged_ms som global rtc variabel? kan jeg ikke bare henta fra datalogger?
     - Og er ting egentlig definert dobbelt opp i datalogger?
 - CI/CD opplegg
 - prodgrade at scale
 - vurdere å bytte til ESP-IDF istendfor aurdino
 
+Ok for now:
+- Passord handling - ok for now. 
+    - Vurdere secrets ini. 
+    - Hvordan unngå at esp32 må starte på nytt hvis jeg endrer wifi passord via nettside?
+- Vurdere obj kode - ok
+    - use hybrid. hardware layer = obj. business logic = modular C/C++. cross cutting = global vars  
+- Wifi conncetion - ok for now
+    - dual atp + stp - ok
+    - local name - ok
+    - men hvordan kombinere det med ip adresse som er statisk / ikke statisk? og ev nettside?
+    - få wifi navn unikt
+    - vurder og også bruke local for ap mode
+- Maskintilstand - ok for now
+    - Nå har vi en flag state machine. 
+        - vurdere en context struct som samler de løse flaggene i en struct
+        - eller: at tilstandsmaskin heller regarer på hendelser definert av en event enum
+        - obj basert tilstandsmaskin (men antagligvis overkill) 
+    - NB! sjekk hva som skjer i state interactive hvis man er pålogget lenge! vil den da gjøre logging "parallelt?
+- Gjøre oled smart - ok for now 
+    - hvordan displaye ting smartere? hvordan displaye en logg? etc.
+- RTC clock - ok for now
+    - gjøre en sjekk mellom RTC og NTP av og til (en gang i halvåret eller ved reboot typ)
+
+Ok
+- Async web - ok
+
 Kjopeliste ali:
 - black/white screen
 - AA batteriholder
 - 2stk beskyttet 1860 batteri
 - 2 stk LoRa moduler
+- gps?

@@ -84,6 +84,8 @@ void goToDeepSleep(int64_t sleep_time_us) {
     #endif
 
     Serial.flush(); // Ensure all serial data is sent before shutting down the radio/CPU
+    delay(100); // Give the USB stack time to push the final buffer to the PC
+    
     esp_deep_sleep_start();
   
     // This line will never be reached unless deep sleep fails
