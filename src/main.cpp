@@ -21,39 +21,57 @@ static AppState lastLoggedState = STATE_NONE;
 // Runtime flags passed between states
 bool stayAwakeForInteraction = false; 
 
+// Ensure we only dump history once per boot/connection
+bool hasDumpedHistory = false;
+
 void setup() {
-  delay(500); // Stabilize after power on/reset
+  // 1. Initialize Serial without blocking
+  // We set timeout to 0 so the code doesn't freeze if USB is unplugged.
   Serial.begin(115200);
+  Serial.setTxTimeoutMs(0); 
 
-  // Serial.setTxTimeoutMs(0); 
+  // 2. Initialize RTC Logging
+  Logger_Init();
+  
+  // 3. Log Startup (This goes instantly to RTC Memory)
+  // We do NOT wait for PC here. Fast boot!
+  LOG_INFO(LOG_TAG, "--- System Starting Up (Fast Boot) ---");
+  LOG_INFO(LOG_TAG, "Wakeup Cause: %d", (int)esp_sleep_get_wakeup_cause());
 
-  // 2. Vent på PC-tilkobling (5 sekunder er bra)
-  unsigned long start = millis();
-  while (!Serial && (millis() - start < 5000)) {
+  // 4. SYNCHRONIZATION POINT (The "Wait for Developer" Logic)
+  // We try to detect the PC for up to 4 seconds.
+  // This gives you time to open the Serial Monitor after a sleep cycle.
+  
+  unsigned long waitStart = millis();
+  bool pcConnected = false;
+
+  while ((millis() - waitStart < 4000)) {
+      if (Serial) {
+          pcConnected = true;
+          // We found the PC! Break the loop early.
+          break; 
+      }
       delay(10);
   }
 
-  // 3. KRITISK: Gi USB-bufferen på PC-en tid til å stabilisere seg
-  // Etter at !Serial blir true, trenger OS-en ofte noen millisekunder 
-  // på å faktisk begynne å tegne i terminalvinduet.
-  delay(1000); 
-
-  // 4. Send en tydelig "banner" for å tømme PC-bufferen
-  Serial.println("\n\n\n");
-  Serial.println("========================================");
-  Serial.println("       ESP32-C6 BOOT SEQUENCER          ");
-  Serial.println("========================================");
-  
-  // 5. Nå kan du logge de første meldingene
-  LOG_INFO(LOG_TAG, "--- System Starting Up ---");
-  
-  // Nå vil resten av loopen og tilstandsmaskinen starte
-  
-  // Gi PC-en et lite halvsekund på å faktisk tegne teksten over
-  delay(500);
+  // 5. DUMP HISTORY
+  if (pcConnected) {
+      // Give the PC driver a tiny moment to stabilize the text stream
+      delay(500); 
+      
+      // Dump the logs we captured in Step 3
+      Logger_FlushRTCtoSerial();
+      
+      LOG_INFO(LOG_TAG, "PC Connection established. Starting application...");
+  } else {
+      // Timeout reached (Battery mode)
+      LOG_INFO(LOG_TAG, "No PC detected (Timeout). Starting application in headless mode.");
+  }
 }
 
+
 void loop() {
+
   // Check for state transition (for logging/debugging)
   if (currentState != lastLoggedState) {
         

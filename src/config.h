@@ -34,7 +34,8 @@ constexpr uint8_t DHT_TYPE_DEF = SENSOR_TYPE;
 // --------------------------------------------------------------------------
 
 // Logging Level
-#define SYSTEM_LOG_LEVEL  4 
+#define SYSTEM_LOG_LEVEL  4
+#define LOG_BUFFER_SIZE   4096 // Size of log buffer in bytes
 
 // Wi-Fi Configuration
 constexpr const char* AP_SSID = "ESP32_DataLogger";
@@ -59,7 +60,7 @@ constexpr unsigned long WAKEUP_OVERHEAD_MS = 1000;
 
 // Web Server
 constexpr unsigned int WEBSERVER_PORT = 80;
-constexpr unsigned long WEB_SERVER_INACTIVITY_TIMEOUT = 90 * 1000;
+constexpr unsigned long WEB_SERVER_INACTIVITY_TIMEOUT = 10 * 1000;
 constexpr bool ENABLE_WEB_SERVER_ON_TIMER_WAKEUP = false; 
 constexpr const char* MDNS_HOSTNAME = "esp32logger";
 

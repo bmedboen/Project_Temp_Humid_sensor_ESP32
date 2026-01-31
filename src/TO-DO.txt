@@ -29,6 +29,7 @@ TO-DO:
 - CI/CD opplegg
 - prodgrade at scale
 - vurdere å bytte til ESP-IDF istendfor aurdino
+- crash dump (Exception Decoder: Sørg for at du har monitor_filters = esp32_exception_decoder i platformio.ini. Da forstår du hvorfor den krasjer mens du utvikler.)
 
 Ok for now:
 - Passord handling - ok for now. 
@@ -62,3 +63,4 @@ Kjopeliste ali:
 - 2stk beskyttet 1860 batteri
 - 2 stk LoRa moduler
 - gps?
+- USB til TTL (3.3V kompatilbel, Anbefalte chiper: CP2102 eller FTDI FT232, Unngå de aller billigste PL2303 hvis du bruker Windows 11, driverne kan være kronglete)

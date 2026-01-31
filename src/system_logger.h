@@ -1,3 +1,4 @@
+// system_logger.h
 #pragma once
 #include <Arduino.h>
 #include "config.h"
@@ -26,6 +27,9 @@ enum class LogLevel {
 // Function takes the Enum
 void Logger_Init();
 void Logger_Log(LogLevel level, const char* tag, const char* format, ...);
+
+// Function to dump the buffered logs to Serial
+void Logger_FlushRTCtoSerial();
 
 // Macros use the Defines
 #if SYSTEM_LOG_LEVEL >= _LOG_LVL_ERROR
