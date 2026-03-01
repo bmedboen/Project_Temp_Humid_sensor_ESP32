@@ -14,6 +14,14 @@
     #define SYSTEM_LOG_LEVEL _LOG_LVL_INFO
 #endif
 
+// --- Configuration ---
+// The path to the log file in LittleFS
+#define LOG_FILE_PATH "/system.log"
+
+// Max size of the log file in bytes before we reset it.
+// 20KB is roughly 300-400 lines of logs.
+#define MAX_LOG_FILE_SIZE 20000
+
 // C++ Enum for Type Safety in function calls
 enum class LogLevel {
     None  = _LOG_LVL_NONE,
@@ -26,6 +34,9 @@ enum class LogLevel {
 // Function takes the Enum
 void Logger_Init();
 void Logger_Log(LogLevel level, const char* tag, const char* format, ...);
+
+// Helper to dump the file content to Serial (optional debugging)
+void Logger_DumpToSerial();
 
 // Macros use the Defines
 #if SYSTEM_LOG_LEVEL >= _LOG_LVL_ERROR

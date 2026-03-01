@@ -132,9 +132,10 @@ String getRootHtml() {
         .timestamp-label { font-size: 0.85rem; color: #888; margin-top: 5px; font-style: italic; }
 
         /* Inputs & Buttons */
-        button, input[type=submit] { background: #3498db; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 1rem; margin-top: 15px; font-weight: 500; transition: background 0.2s;}
-        button:hover, input[type=submit]:hover { background: #2980b9; }
-        input { padding: 12px; box-sizing: border-box; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
+        button, input[type=submit], .btn-link { display: block; box-sizing: border-box; background: #3498db; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 1rem; margin-top: 15px; font-weight: 500; transition: background 0.2s; text-decoration: none;}
+        button:hover, input[type=submit]:hover, .btn-link:hover { background: #2980b9; }
+        .btn-secondary { background: #7f8c8d; margin-top: 5px; }
+        .btn-secondary:hover { background: #636e72; }
         
         /* Form Layout Helpers */
         .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -217,6 +218,12 @@ String getRootHtml() {
             <p><small style="color:#999;">Active SSID: )raw";
     html += Settings.getWifiSSID();
     html += R"raw(</small></p>
+
+            <hr style="border:0; border-top:1px solid #eee; margin:25px 0;">
+    
+            <div style="text-align:left; margin-bottom:5px; font-weight:bold; color:#666;">Diagnostics</div>
+            <a href="/log" target="_blank" class="btn-link btn-secondary">View System Log (Debug)</a>
+
         </div>
     </div>
 
@@ -328,6 +335,19 @@ static void setupWebServerRoutes_internal() {
             ESP.restart();
         } else {
             request->send(400, "text/plain", "Missing SSID");
+        }
+    });
+
+    // 5. SYSTEM LOG VIEWER ---
+    server.on("/log", HTTP_GET, [](AsyncWebServerRequest *request){
+        resetWebServerActivityTimer_internal();
+        
+        // LOG_FILE_PATH comes from system_logger.h ("/system.log")
+        if (LittleFS.exists(LOG_FILE_PATH)) {
+            // send(FileSystem, Path, MimeType, Download=false)
+            request->send(LittleFS, LOG_FILE_PATH, "text/plain", false); 
+        } else {
+            request->send(200, "text/plain", "System log is empty or missing.");
         }
     });
 

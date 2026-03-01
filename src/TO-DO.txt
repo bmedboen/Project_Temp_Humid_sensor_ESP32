@@ -1,16 +1,13 @@
 TO-DO:
-
 - Knapp
     - Når jeg trykker på knapp bør den fornye tiden som enheten er våken og reagere i logg
+    - Når jeg trykker på knapp flere ganger etterhverande skal den vise nye "sider" på display
 - Async fullskala
     - vurdere om async web er nok?
-
 
 - SD card
 - BLE
 
-
-- Log files 
 - Dashboard på nett / bedre nettside. 
     - Splittte web side i flere filer
     - Ha en egen nettside som lagrer info slik at jeg ikke alltid må vekke esp for å se data
@@ -31,6 +28,9 @@ TO-DO:
 - vurdere å bytte til ESP-IDF istendfor aurdino
 
 Ok for now:
+- Log files 
+    - Men kan i fremtiden forbedre med timestamp og at jeg kan laste ned filer
+    - Og cleanup av hva som trengs å vises
 - Passord handling - ok for now. 
     - Vurdere secrets ini. 
     - Hvordan unngå at esp32 må starte på nytt hvis jeg endrer wifi passord via nettside?

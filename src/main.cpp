@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #include "app_controller.h"
 #include "config.h" 
-#include "sleep_manager.h" // Needed for the actual sleep call
+#include "sleep_manager.h"
 #include "system_logger.h" 
 
 #define LOG_TAG "MAIN"
@@ -22,38 +22,36 @@ static AppState lastLoggedState = STATE_NONE;
 bool stayAwakeForInteraction = false; 
 
 void setup() {
-  delay(500); // Stabilize after power on/reset
+  // 1. Initialize Serial without blocking
+  // We set timeout to 0 so the code doesn't freeze if USB is unplugged.
   Serial.begin(115200);
-
-  // Serial.setTxTimeoutMs(0); 
-
-  // 2. Vent på PC-tilkobling (5 sekunder er bra)
-  unsigned long start = millis();
-  while (!Serial && (millis() - start < 5000)) {
-      delay(10);
-  }
-
-  // 3. KRITISK: Gi USB-bufferen på PC-en tid til å stabilisere seg
-  // Etter at !Serial blir true, trenger OS-en ofte noen millisekunder 
-  // på å faktisk begynne å tegne i terminalvinduet.
-  delay(1000); 
-
-  // 4. Send en tydelig "banner" for å tømme PC-bufferen
-  Serial.println("\n\n\n");
-  Serial.println("========================================");
-  Serial.println("       ESP32-C6 BOOT SEQUENCER          ");
-  Serial.println("========================================");
+  Serial.setTxTimeoutMs(0);
   
-  // 5. Nå kan du logge de første meldingene
-  LOG_INFO(LOG_TAG, "--- System Starting Up ---");
+  // 2. DEVELOPMENT WAIT LOOP (The "Magic Pause")
+  // In Production (CORE_DEBUG_LEVEL = 0), this code is removed entirely.
+  #if CORE_DEBUG_LEVEL > 0
+      unsigned long waitStart = millis();
+      // Wait up to 3 seconds for the Serial Monitor to open
+      while (!Serial && (millis() - waitStart < 3000)) {
+          delay(10);
+      }
+      
+      if (Serial) {
+          Serial.println("\n\n--- [DEV MODE] SYSTEM AWAKE & TERMINAL READY ---");
+      }
+  #endif
+
+  // 3. Initialize File System Logging
+  Logger_Init();
   
-  // Nå vil resten av loopen og tilstandsmaskinen starte
-  
-  // Gi PC-en et lite halvsekund på å faktisk tegne teksten over
-  delay(500);
+  // 4. Log Startup
+  LOG_INFO(LOG_TAG, "--- System Starting Up (Fast Boot) ---");
+  LOG_INFO(LOG_TAG, "Wakeup Cause: %d", (int)esp_sleep_get_wakeup_cause());
 }
 
+
 void loop() {
+
   // Check for state transition (for logging/debugging)
   if (currentState != lastLoggedState) {
         

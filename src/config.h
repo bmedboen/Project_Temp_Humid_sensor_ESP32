@@ -54,12 +54,12 @@ constexpr bool HAS_EXTERNAL_RTC = true;
 constexpr const char* LOG_FILE_NAME = "/datalog.csv";
 
 // Logic Intervals
-constexpr unsigned long LOG_INTERVAL_SECONDS = 5 * 60; 
-constexpr unsigned long WAKEUP_OVERHEAD_MS = 1000;
+constexpr unsigned long LOG_INTERVAL_SECONDS = 2 * 60 * 60; // Log every X seconds
+constexpr unsigned long WAKEUP_OVERHEAD_MS = 1000; // Overhead to the sleep duration to account for the time it takes to wake up and stabilize before logging
 
 // Web Server
 constexpr unsigned int WEBSERVER_PORT = 80;
-constexpr unsigned long WEB_SERVER_INACTIVITY_TIMEOUT = 90 * 1000;
+constexpr unsigned long WEB_SERVER_INACTIVITY_TIMEOUT = 90 * 1000; // Seconds of inactivity before auto-shutdown
 constexpr bool ENABLE_WEB_SERVER_ON_TIMER_WAKEUP = false; 
 constexpr const char* MDNS_HOSTNAME = "esp32logger";
 
