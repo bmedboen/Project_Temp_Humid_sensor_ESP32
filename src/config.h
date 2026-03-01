@@ -54,7 +54,7 @@ constexpr bool HAS_EXTERNAL_RTC = true;
 constexpr const char* LOG_FILE_NAME = "/datalog.csv";
 
 // Logic Intervals
-constexpr unsigned long LOG_INTERVAL_SECONDS = 2 * 60 * 60; // Log every X seconds
+constexpr unsigned long LOG_INTERVAL_SECONDS = 4 * 60 * 60; // Log every X seconds
 constexpr unsigned long WAKEUP_OVERHEAD_MS = 1000; // Overhead to the sleep duration to account for the time it takes to wake up and stabilize before logging
 
 // Web Server
